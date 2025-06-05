@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Qdrant向量数据库 - 支持远程访问
+  # Qdrant向量数据库
   qdrant:
     image: qdrant/qdrant:v1.9.0
     container_name: face_access_qdrant
@@ -10,23 +10,16 @@ services:
       - "6334:6334"
     volumes:
       - ./services/qdrant/storage:/qdrant/storage
-      - ./services/qdrant/config:/qdrant/config
     environment:
       - QDRANT__SERVICE__HTTP_PORT=6333
       - QDRANT__SERVICE__GRPC_PORT=6334
       - QDRANT__LOG_LEVEL=INFO
-      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY:-face_access_2025}
-      - QDRANT__SERVICE__ENABLE_CORS=true
+      - QDRANT__SERVICE__API_KEY=face_access_2025
     restart: unless-stopped
     networks:
       - face_access_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
-  # MQTT Broker - 支持多机器连接
+  # MQTT Broker
   mosquitto:
     image: eclipse-mosquitto:2.0
     container_name: face_access_mqtt
@@ -40,11 +33,6 @@ services:
     restart: unless-stopped
     networks:
       - face_access_network
-    healthcheck:
-      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "health_check"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # Node-RED - 主控制服务器
   node-red:
@@ -57,29 +45,12 @@ services:
       - ./flows:/data/flows
     environment:
       - TZ=Asia/Shanghai
-      - NODE_RED_ENABLE_PROJECTS=true
-      - NODE_RED_ENABLE_SAFE_MODE=false
-      # 分布式配置环境变量
-      - FACE_EMBED_API_HOST=${FACE_EMBED_API_HOST:-192.168.10.179}
-      - FACE_EMBED_API_PORT=${FACE_EMBED_API_PORT:-8000}
-      - QDRANT_HOST=${QDRANT_HOST:-localhost}
-      - QDRANT_PORT=${QDRANT_PORT:-6333}
-      - QDRANT_API_KEY=${QDRANT_API_KEY:-face_access_2025}
-      - SIMILARITY_THRESHOLD=${SIMILARITY_THRESHOLD:-0.32}
-      - BATCH_SIZE=${BATCH_SIZE:-3}
-      - MAX_WAIT_TIME=${MAX_WAIT_TIME:-100}
-      - API_TIMEOUT=${API_TIMEOUT:-5000}
     restart: unless-stopped
     networks:
       - face_access_network
     depends_on:
       - mosquitto
       - qdrant
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:1880"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # FaceEmbed API - 仅用于本地测试
   # 在生产环境中，这个服务运行在Hailo设备上
@@ -100,91 +71,7 @@ services:
       - face_access_network
     profiles:
       - local-test  # 仅在本地测试时启用
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Prometheus监控
-  prometheus:
-    image: prom/prometheus:v2.45.0
-    container_name: face_access_prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./services/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-      - '--web.enable-remote-write-receiver'
-    restart: unless-stopped
-    networks:
-      - face_access_network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Grafana仪表板
-  grafana:
-    image: grafana/grafana:10.0.0
-    container_name: face_access_grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./services/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./services/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
-    restart: unless-stopped
-    networks:
-      - face_access_network
-    depends_on:
-      - prometheus
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Redis - 用于缓存和会话管理（可选）
-  redis:
-    image: redis:7-alpine
-    container_name: face_access_redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    networks:
-      - face_access_network
-    profiles:
-      - full  # 完整部署时启用
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-volumes:
-  prometheus_data:
-  grafana_data:
-  redis_data:
 
 networks:
   face_access_network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16

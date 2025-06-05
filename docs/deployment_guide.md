@@ -1,36 +1,41 @@
-# 人脸识别门禁系统部署指南
+# 人脸识别门禁系统部署指南 - 简化版
 
 ## 📋 部署概览
 
-本指南将帮助您在生产环境中部署人脸识别门禁系统。系统采用微服务架构，支持多设备并发处理。
+本指南将帮助您在调试和开发环境中部署人脸识别门禁系统。系统采用简化架构，专注于核心功能。
 
-## 🏗️ 系统架构
+## 🏗️ 简化系统架构
 
 ```
 Grove Vision AI V2 → MQTT → Node-RED → FaceEmbed API (Hailo-8) → Qdrant → 门禁控制
-                                ↓
-                         Prometheus + Grafana (监控)
 ```
+
+**核心组件**：
+- **Qdrant**: 向量数据库，存储人脸特征
+- **MQTT Broker**: 消息传递中间件
+- **Node-RED**: 业务逻辑编排（包含所有配置）
+- **FaceEmbed API**: AI推理服务（运行在Hailo设备上）
 
 ## 💻 硬件要求
 
-### 主控制器 (运行Hailo-8)
-- **CPU**: Raspberry Pi 5 (推荐8GB RAM版本)
-- **AI加速器**: Hailo-8 AI加速器模块
-- **存储**: microSD卡 64GB+ (Class 10) 或 SSD
+### 主服务器
+- **CPU**: 双核心以上
+- **内存**: 4GB+ RAM
+- **存储**: 20GB+ 可用空间
 - **网络**: 千兆以太网连接
-- **电源**: 5V/5A USB-C电源适配器
+- **软件**: Ubuntu 22.04, Docker
 
-### 摄像头设备
+### Hailo设备  
+- **硬件**: Raspberry Pi 5 + Hailo-8 AI加速器
+- **内存**: 8GB RAM (推荐)
+- **存储**: microSD卡 32GB+ 或 SSD
+- **网络**: 千兆以太网连接
+- **IP地址**: 192.168.10.179 (可配置)
+
+### Grove Vision AI V2
 - **型号**: Grove Vision AI V2
-- **连接**: Wi-Fi/以太网
+- **连接**: Wi-Fi/以太网到主服务器
 - **电源**: 5V/2A供电
-- **安装**: 室内环境，避免强光直射
-
-### 网络环境
-- **局域网**: 稳定的千兆网络
-- **MQTT**: 低延迟通信 (<10ms)
-- **带宽**: 每设备约2Mbps (视频流)
 
 ## 🚀 快速部署
 
@@ -41,349 +46,378 @@ Grove Vision AI V2 → MQTT → Node-RED → FaceEmbed API (Hailo-8) → Qdrant 
 git clone <repository_url>
 cd face_rec_r2000
 
-# 检查系统要求
-./deployment/start_services.sh --help
+# 检查Docker环境
+docker --version
+docker-compose --version
 ```
 
-### 2. 服务启动
+### 2. 查看手动启动说明
 
 ```bash
-# 启动基础服务
+# 推荐：查看手动启动指南（用于调试）
+./deployment/start_services.sh --manual
+```
+
+### 3. 自动化启动（可选）
+
+```bash
+# 启动基础服务（Qdrant + MQTT）
 ./deployment/start_services.sh
 
-# 启动完整服务 (包含Node-RED)
+# 启动完整服务（包含Node-RED）
 ./deployment/start_services.sh --with-nodered
 
-# 本地测试模式 (启动FaceEmbed API)
+# 本地测试模式（启动本地FaceEmbed API）
 ./deployment/start_services.sh --with-nodered --start-face-api
 ```
 
-### 3. 系统验证
+## 🔧 详细配置
+
+### 1. 主服务器手动启动
+
+```bash
+# 1. 启动Qdrant向量数据库
+docker run -d \
+  --name face_access_qdrant \
+  -p 6333:6333 \
+  -p 6334:6334 \
+  -v $(pwd)/services/qdrant/storage:/qdrant/storage \
+  -e QDRANT__SERVICE__API_KEY=face_access_2025 \
+  qdrant/qdrant:v1.9.0
+
+# 2. 启动MQTT Broker
+docker run -d \
+  --name face_access_mqtt \
+  -p 1883:1883 \
+  -p 9001:9001 \
+  -v $(pwd)/services/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf \
+  eclipse-mosquitto:2.0
+
+# 3. 启动Node-RED
+docker run -d \
+  --name face_access_nodered \
+  -p 1880:1880 \
+  -v $(pwd)/flows:/data/flows \
+  -e TZ=Asia/Shanghai \
+  nodered/node-red:3.1
+```
+
+### 2. Hailo设备配置
+
+```bash
+# 连接到Hailo设备
+ssh harvest@192.168.10.179
+
+# 复制FaceEmbed API文件
+# (从主服务器执行)
+scp -r services/face_embed_api/ harvest@192.168.10.179:~/
+
+# 在Hailo设备上安装依赖
+cd ~/face_embed_api
+pip install -r requirements.txt
+
+# 启动FaceEmbed API
+python app.py
+
+# 后台运行（可选）
+nohup python app.py > face_embed_api.log 2>&1 &
+```
+
+### 3. Node-RED配置
+
+访问 http://localhost:1880 并进行以下配置：
+
+#### 修改Hailo设备IP地址
+在 "API URL 配置器" 节点中：
+```javascript
+// 配置FaceEmbed API URL - 直接在此处修改IP地址
+const faceEmbedHost = '192.168.10.179';  // Hailo设备IP
+const faceEmbedPort = '8000';            // FaceEmbed API端口
+```
+
+#### 设备Collection映射
+在 "准备向量搜索" 节点中：
+```javascript
+// 设备与Collection映射配置 - 在此处添加新设备
+const deviceCollectionMap = {
+    'grove_vision_ai_v2_001': 'office_entrance',
+    'grove_vision_ai_v2_002': 'warehouse_door',
+    'grove_vision_ai_v2_003': 'lab_access',
+    'default': 'default_faces'
+};
+```
+
+#### 相似度阈值调整
+```javascript
+const threshold = 0.32;  // 相似度阈值，可在此处调整
+```
+
+#### Qdrant配置
+```javascript
+// Qdrant配置 - 可在此处修改Qdrant地址
+const qdrantHost = 'localhost';
+const qdrantPort = '6333';
+```
+
+### 4. Grove Vision AI V2配置
+
+```bash
+# 通过Grove Vision AI V2的Web界面配置：
+# - MQTT服务器: 主服务器IP:1883
+# - MQTT主题: vision/frames/{device_id}
+# - 设备ID: grove_vision_ai_v2_001 (示例)
+```
+
+## 📡 服务访问地址
+
+- **Node-RED编辑器**: http://localhost:1880
+- **Qdrant数据库**: http://localhost:6333/dashboard
+- **MQTT测试**: mqtt://localhost:1883
+- **FaceEmbed API**: http://192.168.10.179:8000/docs
+
+## 🧪 测试和验证
+
+### 1. 服务状态检查
+
+```bash
+# 检查Docker容器
+docker ps --filter "name=face_access"
+
+# 测试Qdrant
+curl http://localhost:6333/health
+
+# 测试FaceEmbed API
+curl http://192.168.10.179:8000/health
+
+# 测试MQTT
+mosquitto_pub -h localhost -t test -m "hello"
+```
+
+### 2. 功能测试
+
+```bash
+# 人脸入库测试
+mosquitto_pub -h localhost -t "access/enroll/test_device" \
+  -m '{"name": "张三", "action": "start"}'
+
+# 监听访问结果
+mosquitto_sub -h localhost -t "access/result/+" -v
+
+# 模拟人脸识别数据
+mosquitto_pub -h localhost -t "vision/frames/test_device" \
+  -m '{
+    "ts": "2025-06-05T17:30:00Z",
+    "img_b64": "test_image_data",
+    "bboxes": [{"x": 100, "y": 100, "w": 200, "h": 200, "score": 0.95}]
+  }'
+```
+
+### 3. 性能测试
 
 ```bash
 # 运行集成测试
 python tests/integration_test.py
 
-# 检查服务状态
-docker-compose ps
+# 运行FaceEmbed API测试
+python tests/test_face_embed_api.py
 ```
 
-## 🔧 详细配置
+## 🔒 基础安全配置
 
-### Hailo设备配置
-
-1. **安装Hailo SDK**
+### API认证
 ```bash
-# 在Raspberry Pi 5上安装
-sudo apt update
-sudo apt install hailo-all
+# Qdrant API Key（在Node-RED中配置）
+api-key: face_access_2025
 
-# 验证安装
-hailortcli fw-control identify
+# 可以修改为更安全的密钥
 ```
 
-2. **部署FaceEmbed API**
+### 网络安全
 ```bash
-# 复制服务文件到Hailo设备
-scp -r services/face_embed_api/ harvest@192.168.10.179:~/
-
-# 在Hailo设备上启动
-ssh harvest@192.168.10.179
-cd ~/face_embed_api
-pip install -r requirements.txt
-python app.py
-```
-
-3. **模型文件配置**
-```bash
-# 下载预训练模型 (如果需要)
-export FACE_DETECTION_HEF=/usr/share/hailo-models/scrfd_10g.hef
-export FACE_RECOGNITION_HEF=/usr/share/hailo-models/arcface_mobilefacenet_v1.hef
-```
-
-### Grove Vision AI V2配置
-
-1. **设备连接**
-```bash
-# 配置设备Wi-Fi
-# 通过Grove Vision AI V2的Web界面配置网络
-
-# 设置MQTT连接
-MQTT_BROKER=192.168.10.100  # 主控制器IP
-MQTT_PORT=1883
-```
-
-2. **数据格式配置**
-```json
-{
-  "mqtt": {
-    "topic": "vision/frames/{device_id}",
-    "qos": 0,
-    "format": "json"
-  },
-  "inference": {
-    "model": "face_detection",
-    "confidence_threshold": 0.7,
-    "image_size": [480, 480]
-  }
-}
-```
-
-### Node-RED流程配置
-
-1. **导入流程**
-```bash
-# 访问Node-RED界面
-open http://localhost:1880
-
-# 导入flows/face_access_control.json
-# 配置MQTT连接和环境变量
-```
-
-2. **环境变量设置**
-```javascript
-// 在Node-RED设置中配置
-env.QDRANT_API_KEY = "face_access_2025"
-env.SIMILARITY_THRESHOLD = "0.32"
-env.COLLECTION_grove_vision_ai_v2_001 = "office_entrance"
-```
-
-## 📊 监控配置
-
-### Prometheus配置
-
-```yaml
-# services/monitoring/prometheus.yml
-global:
-  scrape_interval: 15s
-
-scrape_configs:
-  - job_name: 'face-embed-api'
-    static_configs:
-      - targets: ['192.168.10.179:8000']
-
-  - job_name: 'qdrant'
-    static_configs:
-      - targets: ['localhost:6333']
-
-  - job_name: 'node-red'
-    static_configs:
-      - targets: ['localhost:1880']
-```
-
-### Grafana仪表板
-
-```bash
-# 访问Grafana
-open http://localhost:3000
-# 用户名: admin, 密码: admin123
-
-# 导入预配置的仪表板
-# 文件位置: services/monitoring/grafana/dashboards/
-```
-
-## 🔒 安全配置
-
-### TLS加密
-
-1. **MQTT TLS配置**
-```bash
-# 生成SSL证书
-openssl req -x509 -newkey rsa:4096 -keyout mqtt-key.pem -out mqtt-cert.pem -days 365 -nodes
-
-# 更新mosquitto.conf
-listener 8883
-protocol mqtt
-cafile /mosquitto/config/ca.crt
-certfile /mosquitto/config/server.crt
-keyfile /mosquitto/config/server.key
-```
-
-2. **API认证**
-```bash
-# 更新API Key
-export QDRANT_API_KEY="your-secure-api-key"
-export FACE_EMBED_API_KEY="your-face-api-key"
-```
-
-### 防火墙配置
-
-```bash
-# Ubuntu/Debian
+# 防火墙配置
 sudo ufw allow 1883/tcp   # MQTT
-sudo ufw allow 8000/tcp   # FaceEmbed API
 sudo ufw allow 6333/tcp   # Qdrant
 sudo ufw allow 1880/tcp   # Node-RED
-sudo ufw allow 3000/tcp   # Grafana
+sudo ufw allow 8000/tcp   # FaceEmbed API (Hailo设备)
 sudo ufw enable
-```
-
-## 🧪 测试和验证
-
-### 功能测试
-
-1. **人脸入库测试**
-```bash
-# 通过MQTT发送入库请求
-mosquitto_pub -h localhost -t "access/enroll/test_device" \
-  -m '{"name": "张三", "action": "start"}'
-```
-
-2. **人脸识别测试**
-```bash
-# 模拟Grove Vision AI V2数据
-python tests/simulate_vision_ai.py
-```
-
-3. **性能测试**
-```bash
-# 延迟测试
-python tests/latency_test.py
-
-# 吞吐量测试
-python tests/throughput_test.py
-```
-
-### 负载测试
-
-```bash
-# 多设备并发测试
-python tests/load_test.py --devices 20 --duration 300
-```
-
-## 📈 性能优化
-
-### 系统调优
-
-1. **内存优化**
-```bash
-# 增加GPU内存分配
-echo 'gpu_mem=128' >> /boot/config.txt
-
-# 优化Docker内存限制
-# 在docker-compose.yml中设置内存限制
-```
-
-2. **网络优化**
-```bash
-# 增加网络缓冲区
-echo 'net.core.rmem_max = 16777216' >> /etc/sysctl.conf
-echo 'net.core.wmem_max = 16777216' >> /etc/sysctl.conf
-```
-
-3. **存储优化**
-```bash
-# 使用SSD存储
-# 配置tmpfs用于临时文件
-tmpfs /tmp tmpfs defaults,noatime,nosuid,size=100m 0 0
 ```
 
 ## 🚨 故障排除
 
 ### 常见问题
 
-1. **FaceEmbed API无法启动**
+#### 1. FaceEmbed API连接失败
 ```bash
-# 检查Hailo驱动
-lsmod | grep hailo
+# 检查网络连接
+ping 192.168.10.179
 
-# 检查模型文件
-ls -la /usr/share/hailo-models/
+# 检查API服务状态
+curl http://192.168.10.179:8000/health
 
-# 查看API日志
-tail -f services/face_embed_api/face_embed_api.log
+# 查看Hailo设备日志
+ssh harvest@192.168.10.179
+tail -f ~/face_embed_api.log
 ```
 
-2. **Qdrant连接失败**
+#### 2. Qdrant连接失败
 ```bash
-# 检查服务状态
-docker-compose logs qdrant
+# 检查容器状态
+docker logs face_access_qdrant
 
-# 测试连接
-curl http://localhost:6333/health
+# 检查存储权限
+ls -la services/qdrant/storage
+
+# 重启服务
+docker restart face_access_qdrant
 ```
 
-3. **MQTT消息丢失**
+#### 3. MQTT消息丢失
 ```bash
-# 检查MQTT broker状态
-docker-compose logs mosquitto
+# 检查MQTT服务
+docker logs face_access_mqtt
 
 # 测试MQTT连接
-mosquitto_sub -h localhost -t "vision/frames/+"
+mosquitto_sub -h localhost -t '#' -v
+
+# 检查端口占用
+netstat -an | grep 1883
+```
+
+#### 4. Node-RED配置问题
+```bash
+# 查看Node-RED日志
+docker logs face_access_nodered
+
+# 访问Node-RED界面
+open http://localhost:1880
+
+# 检查流程配置
+# 导入 flows/face_access_control.json
 ```
 
 ### 日志分析
 
 ```bash
-# 系统日志
-docker-compose logs -f
+# 查看所有服务日志
+docker logs -f face_access_qdrant
+docker logs -f face_access_mqtt
+docker logs -f face_access_nodered
 
-# 特定服务日志
-docker-compose logs -f qdrant
-docker-compose logs -f mosquitto
-
-# 应用日志
-tail -f services/face_embed_api/face_embed_api.log
+# Hailo设备日志
+ssh harvest@192.168.10.179
+tail -f ~/face_embed_api.log
 ```
 
-## 📝 维护计划
+## 📈 性能优化
+
+### 系统调优
+
+```bash
+# Hailo设备性能优化
+# 在 services/face_embed_api/app.py 中调整
+WORKERS = 4  # 根据设备性能调整
+LOG_LEVEL = "INFO"
+
+# Node-RED内存优化
+# 监控容器资源使用
+docker stats face_access_nodered
+
+# MQTT消息频率限制
+# 建议Grove Vision AI V2发送频率为5fps
+```
+
+### 配置优化
+
+```javascript
+// Node-RED中的批量处理配置
+const batchSize = 3;           // 批量大小
+const maxWaitTime = 100;       // 最大等待时间(ms)
+const apiTimeout = 5000;       // API超时时间(ms)
+```
+
+## 📝 维护指南
 
 ### 日常维护
 
-- **每日**: 检查系统状态和性能指标
-- **每周**: 清理日志文件和临时数据
-- **每月**: 更新系统软件和安全补丁
-- **每季度**: 备份人脸数据库和配置文件
+- **每日**: 检查系统状态和日志
+- **每周**: 清理Docker日志和临时文件
+- **每月**: 更新系统软件
 
 ### 备份策略
 
 ```bash
 # 备份Qdrant数据
-docker exec face_access_qdrant qdrant-backup
+docker cp face_access_qdrant:/qdrant/storage ./backup/qdrant_$(date +%Y%m%d)
 
 # 备份Node-RED流程
-cp services/node_red/data/flows.json backup/
+cp flows/face_access_control.json backup/
 
 # 备份配置文件
-tar -czf config_backup.tar.gz .env services/*/config/
+tar -czf backup/config_$(date +%Y%m%d).tar.gz services/*/config/
 ```
 
-### 扩展计划
+### 服务重启
 
-1. **横向扩展**
-   - 添加更多Hailo设备节点
-   - 配置负载均衡器
-   - 实现数据分片
+```bash
+# 重启单个服务
+docker restart face_access_qdrant
+docker restart face_access_mqtt
+docker restart face_access_nodered
 
-2. **功能扩展**
-   - 集成活体检测
-   - 添加年龄/性别识别
-   - 实现Web管理界面
+# 重启FaceEmbed API (在Hailo设备上)
+ssh harvest@192.168.10.179
+pkill -f "python app.py"
+cd ~/face_embed_api && python app.py
+
+# 停止所有服务
+docker stop face_access_qdrant face_access_mqtt face_access_nodered
+```
 
 ## 📞 技术支持
 
-如遇到问题，请按以下步骤：
+### 问题诊断步骤
 
-1. 查看本文档的故障排除部分
-2. 检查GitHub Issues
-3. 运行诊断脚本: `python tests/diagnostic.py`
-4. 收集日志文件并联系技术支持
+1. **检查服务状态**: `docker ps`
+2. **查看日志**: `docker logs [container_name]`
+3. **网络连通性**: `ping` 和 `curl` 测试
+4. **配置验证**: 检查Node-RED中的配置
+
+### 常用命令
+
+```bash
+# 完整系统重启
+docker-compose down
+docker-compose up -d
+
+# 查看系统资源
+docker stats
+free -h
+df -h
+
+# 网络诊断
+netstat -tulpn | grep -E '(1883|6333|1880|8000)'
+```
 
 ---
 
-## 📋 检查清单
+## 📋 部署检查清单
 
-部署完成后，请确认以下项目：
+完成部署后，请确认以下项目：
 
-- [ ] 所有Docker容器正常运行
-- [ ] FaceEmbed API健康检查通过
-- [ ] Qdrant向量数据库可访问
-- [ ] MQTT消息正常传输
-- [ ] Node-RED流程已导入并运行
+- [ ] Docker容器正常运行 (qdrant, mosquitto, node-red)
+- [ ] Qdrant向量数据库可访问 (http://localhost:6333)
+- [ ] MQTT服务正常 (mqtt://localhost:1883)
+- [ ] Node-RED界面可访问 (http://localhost:1880)
+- [ ] FaceEmbed API运行正常 (http://192.168.10.179:8000)
+- [ ] Node-RED流程已导入并配置
+- [ ] 设备Collection映射已设置
 - [ ] Grove Vision AI V2设备已连接
-- [ ] 监控系统正常工作
-- [ ] 安全配置已启用
+- [ ] 基础功能测试通过
+- [ ] 日志记录正常
 - [ ] 备份策略已实施
-- [ ] 团队成员已培训
 
-部署成功！🎉
+**部署完成！** 🎉
+
+---
+
+**注意**: 此简化版本专注于核心功能，适合开发和调试环境。所有配置都在Node-RED中管理，无需复杂的环境变量设置。

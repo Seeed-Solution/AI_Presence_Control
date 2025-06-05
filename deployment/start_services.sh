@@ -1,9 +1,9 @@
 #!/bin/bash
-# 人脸识别门禁系统启动脚本 - 支持分布式部署
+# 人脸识别门禁系统简化启动脚本 - 调试版本
 
 set -e
 
-echo "🚀 启动人脸识别门禁系统 (分布式版本)..."
+echo "🚀 启动人脸识别门禁系统 (简化版本)..."
 
 # 颜色定义
 RED='\033[0;31m'
@@ -57,141 +57,16 @@ create_directories() {
     log_info "创建必要的目录..."
     
     mkdir -p services/qdrant/storage
-    mkdir -p services/qdrant/config
     mkdir -p services/mqtt/data
     mkdir -p services/mqtt/log
     mkdir -p services/node_red/data
-    mkdir -p services/monitoring/prometheus
-    mkdir -p services/monitoring/grafana/dashboards
-    mkdir -p services/monitoring/grafana/datasources
     
     log_success "目录创建完成"
 }
 
-# 设置环境变量
-setup_environment() {
-    log_info "设置环境变量..."
-    
-    # 创建 .env 文件（如果不存在）
-    if [ ! -f .env ]; then
-        log_info "从模板创建 .env 配置文件..."
-        if [ -f .env.example ]; then
-            cp .env.example .env
-            log_success "已从 .env.example 创建 .env 文件"
-        else
-            cat > .env << EOF
-# 人脸识别门禁系统 - 分布式部署配置
-
-# Hailo设备配置 (FaceEmbed API)
-FACE_EMBED_API_HOST=192.168.10.179
-FACE_EMBED_API_PORT=8000
-FACE_EMBED_API_WORKERS=4
-
-# 向量数据库配置 (Qdrant)
-QDRANT_HOST=localhost
-QDRANT_PORT=6333
-QDRANT_API_KEY=face_access_2025
-
-# MQTT服务器配置
-MQTT_HOST=localhost
-MQTT_PORT=1883
-
-# 算法参数配置
-SIMILARITY_THRESHOLD=0.32
-BATCH_SIZE=3
-MAX_WAIT_TIME=100
-API_TIMEOUT=5000
-
-# 设备与Collection映射
-COLLECTION_grove_vision_ai_v2_001=office_entrance
-COLLECTION_grove_vision_ai_v2_002=warehouse_door
-COLLECTION_grove_vision_ai_v2_003=lab_access
-
-# 监控配置
-GRAFANA_ADMIN_PASSWORD=admin123
-PROMETHEUS_RETENTION=200h
-
-# 部署模式配置
-DEPLOY_MODE=production
-COMPOSE_PROFILES=production
-
-# 性能调优
-MAX_CONCURRENT_CONNECTIONS=100
-MEMORY_CACHE_SIZE=512
-LOG_LEVEL=INFO
-EOF
-            log_success "创建默认 .env 配置文件"
-        fi
-    else
-        log_info ".env 文件已存在，跳过创建"
-    fi
-    
-    # 加载环境变量
-    source .env
-}
-
-# 创建监控配置文件
-setup_monitoring_config() {
-    log_info "创建监控配置文件..."
-    
-    # Prometheus配置
-    cat > services/monitoring/prometheus.yml << EOF
-global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
-
-rule_files:
-  # - "first_rules.yml"
-  # - "second_rules.yml"
-
-scrape_configs:
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['localhost:9090']
-
-  - job_name: 'face-embed-api'
-    static_configs:
-      - targets: ['${FACE_EMBED_API_HOST:-192.168.10.179}:${FACE_EMBED_API_PORT:-8000}']
-    metrics_path: '/metrics'
-    scrape_interval: 30s
-
-  - job_name: 'qdrant'
-    static_configs:
-      - targets: ['${QDRANT_HOST:-localhost}:${QDRANT_PORT:-6333}']
-    metrics_path: '/metrics'
-    scrape_interval: 30s
-
-  - job_name: 'node-red'
-    static_configs:
-      - targets: ['localhost:1880']
-    metrics_path: '/metrics'
-    scrape_interval: 30s
-
-  - job_name: 'mqtt-broker'
-    static_configs:
-      - targets: ['localhost:1883']
-    scrape_interval: 60s
-EOF
-
-    # Grafana数据源配置
-    mkdir -p services/monitoring/grafana/datasources
-    cat > services/monitoring/grafana/datasources/prometheus.yml << EOF
-apiVersion: 1
-
-datasources:
-  - name: Prometheus
-    type: prometheus
-    access: proxy
-    url: http://prometheus:9090
-    isDefault: true
-EOF
-
-    log_success "监控配置文件创建完成"
-}
-
 # 启动基础服务
 start_infrastructure() {
-    log_info "启动基础服务 (Qdrant, MQTT, 监控)..."
+    log_info "启动基础服务 (Qdrant, MQTT)..."
     
     # 检查并设置Docker Compose命令
     if command -v docker-compose &> /dev/null; then
@@ -201,11 +76,11 @@ start_infrastructure() {
     fi
     
     # 启动基础服务
-    $DOCKER_COMPOSE_CMD up -d qdrant mosquitto prometheus grafana
+    $DOCKER_COMPOSE_CMD up -d qdrant mosquitto
     
     # 等待服务启动
     log_info "等待服务启动..."
-    sleep 15
+    sleep 10
     
     # 检查服务状态
     check_service_health
@@ -235,40 +110,14 @@ check_service_health() {
     else
         log_warning "MQTT 服务可能未完全启动"
     fi
-    
-    # 检查 Prometheus
-    log_info "检查 Prometheus 服务..."
-    for i in {1..20}; do
-        if curl -f http://localhost:9090/-/healthy &> /dev/null; then
-            log_success "Prometheus 服务正常 (http://localhost:9090)"
-            break
-        fi
-        sleep 2
-        if [ $i -eq 20 ]; then
-            log_warning "Prometheus 服务启动超时"
-        fi
-    done
-    
-    # 检查 Grafana
-    log_info "检查 Grafana 服务..."
-    for i in {1..20}; do
-        if curl -f http://localhost:3000/api/health &> /dev/null; then
-            log_success "Grafana 服务正常 (http://localhost:3000)"
-            break
-        fi
-        sleep 2
-        if [ $i -eq 20 ]; then
-            log_warning "Grafana 服务启动超时"
-        fi
-    done
 }
 
 # 检查远程FaceEmbed API连接
 check_remote_face_api() {
     log_info "检查远程 FaceEmbed API 连接..."
     
-    local api_host=${FACE_EMBED_API_HOST:-192.168.10.179}
-    local api_port=${FACE_EMBED_API_PORT:-8000}
+    local api_host="192.168.10.179"
+    local api_port="8000"
     local api_url="http://${api_host}:${api_port}/health"
     
     log_info "尝试连接到: $api_url"
@@ -280,7 +129,8 @@ check_remote_face_api() {
         log_warning "无法连接到 FaceEmbed API"
         log_info "请确保在 Hailo 设备 ($api_host) 上启动了 FaceEmbed API 服务"
         log_info "在 Hailo 设备上运行:"
-        log_info "  cd /path/to/face_embed_api"
+        log_info "  ssh harvest@$api_host"
+        log_info "  cd ~/face_embed_api"
         log_info "  python app.py"
         return 1
     fi
@@ -313,7 +163,7 @@ init_qdrant_collections() {
         
         curl -X PUT "http://localhost:6333/collections/$collection" \
             -H "Content-Type: application/json" \
-            -H "api-key: ${QDRANT_API_KEY:-face_access_2025}" \
+            -H "api-key: face_access_2025" \
             -d '{
                 "vectors": {
                     "size": 512,
@@ -379,32 +229,35 @@ start_local_face_api() {
 
 # 显示部署信息
 show_deployment_info() {
-    log_info "分布式部署信息:"
+    log_info "简化系统部署信息:"
     echo
     echo "🏗️  系统架构:"
     echo "  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐"
     echo "  │ Grove Vision AI │───→│   MQTT Broker   │───→│    Node-RED     │"
-    echo "  │      V2         │    │   (本机)        │    │    (本机)       │"
-    echo "  └─────────────────┘    └─────────────────┘    └─────────────────┘"
+    echo "  │      V2         │    │   (主服务器)    │    │   (主服务器)    │"
+    echo "  │   (多设备)      │    │                 │    │  ┌─────────────┐ │"
+    echo "  └─────────────────┘    └─────────────────┘    │  │ 配置都在    │ │"
+    echo "                                              │  │ Node-RED中  │ │"
+    echo "                                              │  └─────────────┘ │"
+    echo "                                              └─────────────────┘"
     echo "                                                         │"
-    echo "                                                         ▼"
+    echo "                                                         ▼ HTTP API"
     echo "  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐"
-    echo "  │  FaceEmbed API  │◀───│     Qdrant      │◀───│ HTTP Request    │"
-    echo "  │ (Hailo设备)     │    │    (本机)       │    │                 │"
+    echo "  │  FaceEmbed API  │◀───│     Qdrant      │◀───│ Vector Search   │"
+    echo "  │ (Hailo设备)     │    │   (主服务器)    │    │                 │"
+    echo "  │  192.168.10.179 │    │                 │    │                 │"
     echo "  └─────────────────┘    └─────────────────┘    └─────────────────┘"
     echo
     
     echo "🌐 服务访问地址:"
     echo "  • Qdrant (向量数据库):    http://localhost:6333/dashboard"
     echo "  • MQTT Broker:           mqtt://localhost:1883"
-    echo "  • Prometheus (监控):     http://localhost:9090"
-    echo "  • Grafana (仪表板):      http://localhost:3000 (admin/${GRAFANA_ADMIN_PASSWORD:-admin123})"
     
     if docker ps | grep -q face_access_nodered; then
         echo "  • Node-RED (流程编排):   http://localhost:1880"
     fi
     
-    echo "  • FaceEmbed API:         http://${FACE_EMBED_API_HOST:-192.168.10.179}:${FACE_EMBED_API_PORT:-8000}/docs"
+    echo "  • FaceEmbed API:         http://192.168.10.179:8000/docs"
     echo
 }
 
@@ -415,51 +268,76 @@ show_service_status() {
     echo
     
     echo "🔧 快速操作:"
-    echo "  • 查看日志: docker-compose logs -f [service_name]"
+    echo "  • 查看日志: docker logs -f [container_name]"
     echo "  • 停止服务: docker-compose down"
-    echo "  • 重启服务: docker-compose restart [service_name]"
-    echo "  • 检查FaceEmbed API: curl http://${FACE_EMBED_API_HOST:-192.168.10.179}:${FACE_EMBED_API_PORT:-8000}/health"
+    echo "  • 重启服务: docker restart [container_name]"
+    echo "  • 检查FaceEmbed API: curl http://192.168.10.179:8000/health"
     echo
 }
 
-# 显示下一步操作
-show_next_steps() {
-    echo "🎯 下一步操作:"
+# 显示手动启动说明
+show_manual_instructions() {
+    echo "📝 手动启动服务 (推荐用于调试):"
     echo
-    echo "1. 📱 配置 Grove Vision AI V2 设备:"
-    echo "   - 连接到网络: ${MQTT_HOST:-localhost}:${MQTT_PORT:-1883}"
-    echo "   - 配置MQTT主题: vision/frames/{device_id}"
+    echo "1. 启动Qdrant:"
+    echo "   docker run -d --name face_access_qdrant -p 6333:6333 \\"
+    echo "     -v \$(pwd)/services/qdrant/storage:/qdrant/storage \\"
+    echo "     -e QDRANT__SERVICE__API_KEY=face_access_2025 \\"
+    echo "     qdrant/qdrant:v1.9.0"
     echo
-    echo "2. 🔧 在 Hailo 设备上启动 FaceEmbed API:"
-    echo "   ssh harvest@${FACE_EMBED_API_HOST:-192.168.10.179}"
+    echo "2. 启动MQTT:"
+    echo "   docker run -d --name face_access_mqtt -p 1883:1883 \\"
+    echo "     -v \$(pwd)/services/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf \\"
+    echo "     eclipse-mosquitto:2.0"
+    echo
+    echo "3. 启动Node-RED:"
+    echo "   docker run -d --name face_access_nodered -p 1880:1880 \\"
+    echo "     -v \$(pwd)/flows:/data/flows -e TZ=Asia/Shanghai \\"
+    echo "     nodered/node-red:3.1"
+    echo
+    echo "4. 启动FaceEmbed API (在Hailo设备上):"
+    echo "   ssh harvest@192.168.10.179"
     echo "   cd ~/face_embed_api"
     echo "   python app.py"
     echo
-    echo "3. 🌊 导入和配置 Node-RED 流程:"
-    if [ "$WITH_NODERED" = true ]; then
-        echo "   - 访问: http://localhost:1880"
-        echo "   - 导入: flows/face_access_control.json"
-        echo "   - 配置环境变量 (参考 .env 文件)"
-    else
-        echo "   - 重新运行脚本并添加 --with-nodered 参数"
-    fi
+    echo "详细的手动启动指南请查看: docs/manual_startup_guide.md"
     echo
-    echo "4. 🧪 测试系统功能:"
-    echo "   - 人脸入库: 发送MQTT消息到 access/enroll/{device_id}"
-    echo "   - 人脸识别: Grove Vision AI V2 自动发送帧数据"
-    echo "   - 监控系统: 访问 Grafana 仪表板"
+}
+
+# 显示配置说明
+show_configuration_info() {
+    echo "⚙️  Node-RED 配置说明:"
+    echo
+    echo "访问 http://localhost:1880 后，在以下节点中修改配置："
+    echo
+    echo "• 修改Hailo设备IP (API URL 配置器节点):"
+    echo "  const faceEmbedHost = '192.168.10.179';"
+    echo
+    echo "• 设备Collection映射 (准备向量搜索节点):"
+    echo "  const deviceCollectionMap = {"
+    echo "    'grove_vision_ai_v2_001': 'office_entrance',"
+    echo "    'grove_vision_ai_v2_002': 'warehouse_door'"
+    echo "  };"
+    echo
+    echo "• 相似度阈值调整:"
+    echo "  const threshold = 0.32;"
+    echo
+    echo "• Qdrant配置:"
+    echo "  const qdrantHost = 'localhost';"
+    echo "  const qdrantPort = '6333';"
     echo
 }
 
 # 主函数
 main() {
     echo "========================================"
-    echo "🎯 人脸识别门禁系统启动脚本 (分布式版本)"
+    echo "🎯 人脸识别门禁系统启动脚本 (简化版本)"
     echo "========================================"
     
     # 全局变量
     WITH_NODERED=false
     START_FACE_API=false
+    MANUAL_MODE=false
     
     # 检查参数
     while [[ $# -gt 0 ]]; do
@@ -472,18 +350,24 @@ main() {
                 START_FACE_API=true
                 shift
                 ;;
+            --manual)
+                MANUAL_MODE=true
+                shift
+                ;;
             --help|-h)
                 echo "使用方法: $0 [选项]"
                 echo
                 echo "选项:"
                 echo "  --with-nodered     同时启动 Node-RED 容器"
                 echo "  --start-face-api   在本地启动 FaceEmbed API (仅用于测试)"
+                echo "  --manual           仅显示手动启动说明"
                 echo "  --help, -h         显示此帮助信息"
                 echo
-                echo "分布式部署说明:"
-                echo "  • Node-RED 和 Qdrant 运行在主服务器"
-                echo "  • FaceEmbed API 运行在 Hailo 设备 (${FACE_EMBED_API_HOST:-192.168.10.179})"
-                echo "  • Grove Vision AI V2 通过 MQTT 连接到主服务器"
+                echo "简化系统说明:"
+                echo "  • 仅包含 Qdrant、MQTT、Node-RED 三个核心服务"
+                echo "  • 配置都在 Node-RED 中管理，无需环境变量"
+                echo "  • FaceEmbed API 运行在 Hailo 设备 (192.168.10.179)"
+                echo "  • 推荐使用 --manual 查看手动启动方式进行调试"
                 echo
                 exit 0
                 ;;
@@ -495,11 +379,16 @@ main() {
         esac
     done
     
+    # 如果是手动模式，只显示说明
+    if [ "$MANUAL_MODE" = true ]; then
+        show_manual_instructions
+        show_configuration_info
+        exit 0
+    fi
+    
     # 执行启动步骤
     check_prerequisites
     create_directories
-    setup_environment
-    setup_monitoring_config
     start_infrastructure
     init_qdrant_collections
     
@@ -515,9 +404,11 @@ main() {
     
     show_deployment_info
     show_service_status
-    show_next_steps
+    show_manual_instructions
+    show_configuration_info
     
-    log_success "人脸识别门禁系统 (分布式版本) 启动完成！"
+    log_success "人脸识别门禁系统 (简化版本) 启动完成！"
+    log_info "建议使用手动启动方式进行调试: ./deployment/start_services.sh --manual"
 }
 
 # 运行主函数

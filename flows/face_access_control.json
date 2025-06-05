@@ -4,7 +4,7 @@
         "type": "tab",
         "label": "人脸识别门禁控制",
         "disabled": false,
-        "info": "基于Grove Vision AI V2和Hailo-8的人脸识别门禁系统主流程 - 支持分布式部署"
+        "info": "基于Grove Vision AI V2和Hailo-8的人脸识别门禁系统主流程 - 简化配置版本"
     },
     {
         "id": "mqtt_vision_input",
@@ -36,6 +36,21 @@
         "libs": [],
         "x": 320,
         "y": 100,
+        "wires": [["api_url_configurator"]]
+    },
+    {
+        "id": "api_url_configurator",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "API URL 配置器",
+        "func": "// 配置FaceEmbed API URL - 直接在此处修改IP地址\nconst faceEmbedHost = '192.168.10.179';  // Hailo设备IP\nconst faceEmbedPort = '8000';            // FaceEmbed API端口\n\n// 设置API URL\nmsg.url = `http://${faceEmbedHost}:${faceEmbedPort}/embed`;\n\n// 添加超时配置\nmsg.timeout = 5000; // 5秒超时\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 160,
         "wires": [["face_embed_request"]]
     },
     {
@@ -75,7 +90,7 @@
         "type": "function",
         "z": "face_access_main_flow",
         "name": "准备向量搜索",
-        "func": "// 获取人脸向量\nconst embedding = msg.payload.vector;\nconst confidence = msg.payload.confidence;\nconst processingTime = msg.payload.processing_time_ms;\n\n// 检查向量质量\nif (confidence < 0.5) {\n    node.warn(`Low face quality: ${confidence}`);\n    return null;\n}\n\n// 获取设备配置\nconst deviceId = msg.deviceId;\nconst collectionName = env.get(`COLLECTION_${deviceId}`) || 'default_faces';\nconst threshold = parseFloat(env.get('SIMILARITY_THRESHOLD') || '0.32');\n\n// 准备Qdrant搜索请求\nmsg.collectionName = collectionName;\nmsg.threshold = threshold;\nmsg.embedding = embedding;\nmsg.confidence = confidence;\nmsg.processingTime = processingTime;\n\n// Qdrant向量搜索请求URL (支持远程部署)\nconst qdrantHost = env.get('QDRANT_HOST') || 'localhost';\nconst qdrantPort = env.get('QDRANT_PORT') || '6333';\nmsg.url = `http://${qdrantHost}:${qdrantPort}/collections/${collectionName}/points/search`;\nmsg.payload = {\n    vector: embedding,\n    limit: 3,\n    with_payload: true,\n    score_threshold: 1 - threshold  // Qdrant使用余弦相似度，需要转换阈值\n};\n\nreturn msg;",
+        "func": "// 获取人脸向量\nconst embedding = msg.payload.vector;\nconst confidence = msg.payload.confidence;\nconst processingTime = msg.payload.processing_time_ms;\n\n// 检查向量质量\nif (confidence < 0.5) {\n    node.warn(`Low face quality: ${confidence}`);\n    return null;\n}\n\n// 设备与Collection映射配置 - 在此处添加新设备\nconst deviceCollectionMap = {\n    'grove_vision_ai_v2_001': 'office_entrance',\n    'grove_vision_ai_v2_002': 'warehouse_door',\n    'grove_vision_ai_v2_003': 'lab_access',\n    'default': 'default_faces'\n};\n\n// 获取设备配置\nconst deviceId = msg.deviceId;\nconst collectionName = deviceCollectionMap[deviceId] || deviceCollectionMap['default'];\nconst threshold = 0.32;  // 相似度阈值，可在此处调整\n\n// 准备Qdrant搜索请求\nmsg.collectionName = collectionName;\nmsg.threshold = threshold;\nmsg.embedding = embedding;\nmsg.confidence = confidence;\nmsg.processingTime = processingTime;\n\n// Qdrant配置 - 可在此处修改Qdrant地址\nconst qdrantHost = 'localhost';\nconst qdrantPort = '6333';\nmsg.url = `http://${qdrantHost}:${qdrantPort}/collections/${collectionName}/points/search`;\n\nmsg.payload = {\n    vector: embedding,\n    limit: 3,\n    with_payload: true,\n    score_threshold: 1 - threshold  // Qdrant使用余弦相似度，需要转换阈值\n};\n\nreturn msg;",
         "outputs": 1,
         "noerr": 0,
         "initialize": "",
@@ -109,8 +124,8 @@
             {
                 "keyType": "other",
                 "keyValue": "api-key",
-                "valueType": "env",
-                "valueValue": "QDRANT_API_KEY"
+                "valueType": "other",
+                "valueValue": "face_access_2025"
             }
         ],
         "x": 980,
@@ -155,7 +170,7 @@
         "type": "function",
         "z": "face_access_main_flow",
         "name": "访问日志",
-        "func": "const result = msg.payload;\n\n// 记录访问日志\nnode.log(`Access Decision - Device: ${result.device_id}, Decision: ${result.decision}, Name: ${result.name || 'Unknown'}, Distance: ${result.distance}`);\n\n// 可以在这里添加更详细的日志记录逻辑\n// 例如写入文件、数据库或发送到监控系统\n\nreturn msg;",
+        "func": "const result = msg.payload;\n\n// 记录访问日志\nnode.log(`Access Decision - Device: ${result.device_id}, Decision: ${result.decision}, Name: ${result.name || 'Unknown'}, Distance: ${result.distance}`);\n\n// 可以在这里添加更详细的日志记录逻辑\n// 例如写入文件、数据库等\n\nreturn msg;",
         "outputs": 1,
         "noerr": 0,
         "initialize": "",
@@ -231,62 +246,6 @@
         "wires": []
     },
     {
-        "id": "batch_embed_processor",
-        "type": "function",
-        "z": "face_access_main_flow",
-        "name": "批量处理支持",
-        "func": "// 支持批量人脸处理以提高并发性能\nconst frameQueue = context.get('frameQueue') || [];\nconst batchSize = parseInt(env.get('BATCH_SIZE') || '3');\nconst maxWaitTime = parseInt(env.get('MAX_WAIT_TIME') || '100'); // ms\n\n// 添加当前帧到队列\nframeQueue.push({\n    deviceId: msg.deviceId,\n    payload: msg.payload,\n    timestamp: Date.now()\n});\n\n// 检查是否需要批量处理\nif (frameQueue.length >= batchSize || \n    (frameQueue.length > 0 && (Date.now() - frameQueue[0].timestamp) > maxWaitTime)) {\n    \n    // 准备批量请求\n    const batchFrames = frameQueue.splice(0, batchSize);\n    context.set('frameQueue', frameQueue);\n    \n    // 构造批量API请求\n    const faceEmbedHost = env.get('FACE_EMBED_API_HOST') || '192.168.10.179';\n    const faceEmbedPort = env.get('FACE_EMBED_API_PORT') || '8000';\n    \n    msg.url = `http://${faceEmbedHost}:${faceEmbedPort}/batch_embed`;\n    msg.payload = {\n        images: batchFrames.map(frame => frame.payload)\n    };\n    msg.batchFrames = batchFrames;\n    \n    return msg;\n} else {\n    // 更新队列\n    context.set('frameQueue', frameQueue);\n    return null;\n}\n",
-        "outputs": 1,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 540,
-        "y": 200,
-        "wires": [["batch_embed_request"]]
-    },
-    {
-        "id": "batch_embed_request",
-        "type": "http request",
-        "z": "face_access_main_flow",
-        "name": "批量FaceEmbed API",
-        "method": "POST",
-        "ret": "obj",
-        "paytoqs": "ignore",
-        "url": "",
-        "tls": "",
-        "persist": false,
-        "proxy": "",
-        "authType": "",
-        "senderr": false,
-        "headers": [
-            {
-                "keyType": "other",
-                "keyValue": "Content-Type",
-                "valueType": "other",
-                "valueValue": "application/json"
-            }
-        ],
-        "x": 760,
-        "y": 200,
-        "wires": [["batch_result_splitter"]]
-    },
-    {
-        "id": "batch_result_splitter",
-        "type": "function",
-        "z": "face_access_main_flow",
-        "name": "分发批量结果",
-        "func": "// 将批量结果分发给各个设备\nconst batchResults = msg.payload;\nconst batchFrames = msg.batchFrames;\n\nif (!batchResults.vectors || batchResults.vectors.length !== batchFrames.length) {\n    node.error('Batch processing result mismatch');\n    return null;\n}\n\nconst messages = [];\n\n// 为每个设备创建单独的消息\nfor (let i = 0; i < batchFrames.length; i++) {\n    const frame = batchFrames[i];\n    const result = {\n        vector: batchResults.vectors[i],\n        processing_time_ms: batchResults.processing_times[i],\n        confidence: 0.8 // 批量处理时使用默认置信度\n    };\n    \n    messages.push({\n        deviceId: frame.deviceId,\n        payload: result,\n        timestamp: frame.timestamp\n    });\n}\n\n// 返回多个消息\nreturn [messages];",
-        "outputs": 1,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 980,
-        "y": 200,
-        "wires": [["vector_search_request"]]
-    },
-    {
         "id": "heartbeat_timer",
         "type": "inject",
         "z": "face_access_main_flow",
@@ -316,7 +275,7 @@
         "type": "function",
         "z": "face_access_main_flow",
         "name": "生成心跳",
-        "func": "// 生成系统心跳信息\nconst faceEmbedHost = env.get('FACE_EMBED_API_HOST') || '192.168.10.179';\nconst faceEmbedPort = env.get('FACE_EMBED_API_PORT') || '8000';\n\nconst heartbeat = {\n    timestamp: new Date().toISOString(),\n    service: 'face_access_control',\n    version: '1.0.0',\n    status: 'running',\n    uptime: process.uptime(),\n    memory_usage: process.memoryUsage(),\n    config: {\n        face_embed_api: `${faceEmbedHost}:${faceEmbedPort}`,\n        qdrant_host: env.get('QDRANT_HOST') || 'localhost',\n        similarity_threshold: env.get('SIMILARITY_THRESHOLD') || '0.32'\n    },\n    last_access: context.get('lastAccess') || null,\n    frame_queue_size: (context.get('frameQueue') || []).length\n};\n\nmsg.payload = heartbeat;\nreturn msg;",
+        "func": "// 生成系统心跳信息\nconst faceEmbedHost = '192.168.10.179';\nconst faceEmbedPort = '8000';\nconst qdrantHost = 'localhost';\nconst similarityThreshold = '0.32';\n\nconst heartbeat = {\n    timestamp: new Date().toISOString(),\n    service: 'face_access_control',\n    version: '1.0.0',\n    status: 'running',\n    uptime: process.uptime(),\n    memory_usage: process.memoryUsage(),\n    config: {\n        face_embed_api: `${faceEmbedHost}:${faceEmbedPort}`,\n        qdrant_host: qdrantHost,\n        similarity_threshold: similarityThreshold\n    },\n    last_access: context.get('lastAccess') || null\n};\n\nmsg.payload = heartbeat;\nreturn msg;",
         "outputs": 1,
         "noerr": 0,
         "initialize": "",
@@ -343,21 +302,6 @@
         "x": 520,
         "y": 500,
         "wires": []
-    },
-    {
-        "id": "api_url_configurator",
-        "type": "function",
-        "z": "face_access_main_flow",
-        "name": "API URL 配置器",
-        "func": "// 动态配置FaceEmbed API URL\nconst faceEmbedHost = env.get('FACE_EMBED_API_HOST') || '192.168.10.179';\nconst faceEmbedPort = env.get('FACE_EMBED_API_PORT') || '8000';\n\n// 设置API URL\nmsg.url = `http://${faceEmbedHost}:${faceEmbedPort}/embed`;\n\n// 添加超时配置\nmsg.timeout = parseInt(env.get('API_TIMEOUT') || '5000'); // 5秒超时\n\nreturn msg;",
-        "outputs": 1,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 340,
-        "y": 160,
-        "wires": [["face_embed_request"]]
     },
     {
         "id": "mqtt_broker",
