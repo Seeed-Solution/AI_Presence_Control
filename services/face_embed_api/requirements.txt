@@ -1,0 +1,15 @@
+# Core dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+numpy==1.24.3
+opencv-python==4.8.1.78
+
+# Optional Hailo dependencies (install manually on Hailo device)
+# hailo-platform
+# hailo-sdk-client
+
+# Development dependencies
+pytest==7.4.3
+httpx==0.25.2
+pillow==10.1.0

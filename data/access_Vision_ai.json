@@ -1,0 +1,1609 @@
+[
+    {
+        "id": "f54138caa1c8a1ae",
+        "type": "subflow",
+        "name": "Grove Vision AI V2 - Expert",
+        "info": "",
+        "category": "※camera-grove-vision-ai-v2",
+        "in": [
+            {
+                "x": 40,
+                "y": 360,
+                "wires": [
+                    {
+                        "id": "7c1022aaa1def947"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 1680,
+                "y": 740,
+                "wires": [
+                    {
+                        "id": "e27b61c642230636",
+                        "port": 0
+                    }
+                ]
+            },
+            {
+                "x": 1680,
+                "y": 840,
+                "wires": [
+                    {
+                        "id": "7de5e61c8b98f05a",
+                        "port": 0
+                    }
+                ]
+            },
+            {
+                "x": 1810,
+                "y": 1000,
+                "wires": [
+                    {
+                        "id": "e5805b647a121dcc",
+                        "port": 0
+                    }
+                ]
+            },
+            {
+                "x": 1930,
+                "y": 1240,
+                "wires": [
+                    {
+                        "id": "50f7be4c6b69ddcc",
+                        "port": 0
+                    },
+                    {
+                        "id": "2119f860c6c1eb12",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [
+            {
+                "name": "----- Device Settings -----",
+                "type": "str",
+                "value": "",
+                "ui": {
+                    "type": "none"
+                }
+            },
+            {
+                "name": "mqtt-broker",
+                "type": "mqtt-broker",
+                "value": "ff55020100010001",
+                "ui": {
+                    "icon": "font-awesome/fa-server",
+                    "label": {
+                        "zh-CN": "*Server",
+                        "en-US": "*Server"
+                    },
+                    "type": "conf-types"
+                }
+            },
+            {
+                "name": "!note_camera",
+                "type": "str",
+                "value": "",
+                "ui": {
+                    "label": {
+                        "zh-CN": "",
+                        "en-US": "....Note: You can also leave it blank and configure it dynamically through input"
+                    },
+                    "type": "none"
+                }
+            },
+            {
+                "name": "----- Output 4: Trigger -----",
+                "type": "str",
+                "value": "",
+                "ui": {
+                    "type": "none"
+                }
+            },
+            {
+                "name": "triggerMode",
+                "type": "str",
+                "value": "yes",
+                "ui": {
+                    "label": {
+                        "zh-CN": "When ...",
+                        "en-US": "When ..."
+                    },
+                    "type": "select",
+                    "opts": {
+                        "opts": [
+                            {
+                                "l": {
+                                    "zh-CN": "Detected",
+                                    "en-US": "Detected"
+                                },
+                                "v": "yes"
+                            },
+                            {
+                                "l": {
+                                    "zh-CN": "Not detected",
+                                    "en-US": "Not detected"
+                                },
+                                "v": "no"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "meta": {
+            "module": "Grove Vision AI V2 - Get Camera",
+            "version": "0.0.1",
+            "author": "seeed",
+            "license": "Apache-2.0"
+        },
+        "color": "#B8EA4F",
+        "outputLabels": [
+            "Original Image",
+            "Inference Result",
+            "Iriginal Data (only can connect to 'tracking analyze' node)",
+            "Detection Trigger"
+        ],
+        "status": {
+            "x": 1660,
+            "y": 1060,
+            "wires": [
+                {
+                    "id": "638e3329feab7f3b",
+                    "port": 0
+                }
+            ]
+        }
+    },
+    {
+        "id": "34ff1840310f347b",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "69cc677d5eeb6285",
+        "name": "subscribe Action Builder",
+        "rules": [
+            {
+                "t": "set",
+                "p": "action",
+                "pt": "msg",
+                "to": "subscribe",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "mqtt_tx",
+                "tot": "flow",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "qos",
+                "pt": "msg",
+                "to": "0",
+                "tot": "num"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 990,
+        "y": 320,
+        "wires": [
+            [
+                "81acb1decc5c4b42"
+            ]
+        ]
+    },
+    {
+        "id": "83c2e443f9356992",
+        "type": "mqtt in",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "when receive data",
+        "topic": "",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "34867ff4d0f1a72d",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 1,
+        "x": 590,
+        "y": 800,
+        "wires": [
+            [
+                "7f40b6ba3ad0fd72"
+            ]
+        ]
+    },
+    {
+        "id": "e5805b647a121dcc",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "Check msg is valid",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "nempty"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 830,
+        "y": 800,
+        "wires": [
+            [
+                "43ac01de39db9fa4",
+                "7de5e61c8b98f05a"
+            ]
+        ]
+    },
+    {
+        "id": "32e42483ac76b0e4",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "305158fcab074826",
+        "name": "send a stop command to camera",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "mqtt_rx",
+                "tot": "flow",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "[65,84,43,66,82,69,65,75,13,10]",
+                "tot": "bin"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 520,
+        "y": 560,
+        "wires": [
+            [
+                "bf72268f8a9d27a0"
+            ]
+        ]
+    },
+    {
+        "id": "7b60f4ba019f1749",
+        "type": "inject",
+        "z": "f54138caa1c8a1ae",
+        "d": true,
+        "g": "409871c0949177f8",
+        "name": "auto resend command",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "3",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "0",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 450,
+        "y": 120,
+        "wires": [
+            [
+                "e48cf7986bc612ae"
+            ]
+        ]
+    },
+    {
+        "id": "23a2040bdd246943",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "409871c0949177f8",
+        "name": "send a start command to camera",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "mqtt_rx",
+                "tot": "flow"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "[65,84,43,73,78,86,79,75,69,61,45,49,44,48,44,48,13,10]",
+                "tot": "bin"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1280,
+        "y": 120,
+        "wires": [
+            [
+                "80ea757c32b9913b"
+            ]
+        ]
+    },
+    {
+        "id": "e48cf7986bc612ae",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "g": "409871c0949177f8",
+        "name": "Confirm that the camera is currently expected to be connected",
+        "property": "mqtt_rx",
+        "propertyType": "flow",
+        "rules": [
+            {
+                "t": "nempty"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 850,
+        "y": 120,
+        "wires": [
+            [
+                "23a2040bdd246943"
+            ]
+        ]
+    },
+    {
+        "id": "6748f017d2dabecb",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "g": "409871c0949177f8",
+        "name": "reconnect logic",
+        "info": "",
+        "x": 380,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "43ac01de39db9fa4",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "get image",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.data.image",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "raw",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1080,
+        "y": 740,
+        "wires": [
+            [
+                "e27b61c642230636"
+            ]
+        ]
+    },
+    {
+        "id": "7de5e61c8b98f05a",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "get inference result",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.data.boxes",
+                "tot": "msg",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "raw",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1110,
+        "y": 800,
+        "wires": [
+            [
+                "4834b4fbeb890aaf"
+            ]
+        ],
+        "info": "[[118,150,237,175,100,0],[114,119,76,84,100,2]]"
+    },
+    {
+        "id": "e27b61c642230636",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "Check image is valid",
+        "property": "payload.length",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gte",
+                "v": "100",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1280,
+        "y": 740,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "208a200fb554527a",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "69cc677d5eeb6285",
+        "name": "override mqtt_tx and mqtt_rx",
+        "rules": [
+            {
+                "t": "set",
+                "p": "mqtt_tx",
+                "pt": "flow",
+                "to": "\"sscma/v0/\" & payload & \"/tx\"",
+                "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "mqtt_rx",
+                "pt": "flow",
+                "to": "\"sscma/v0/\" & payload & \"/rx\"",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 700,
+        "y": 360,
+        "wires": [
+            [
+                "34ff1840310f347b",
+                "2191648825898ba5"
+            ]
+        ]
+    },
+    {
+        "id": "2191648825898ba5",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "69cc677d5eeb6285",
+        "name": "send a start command to camera",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "mqtt_rx",
+                "tot": "flow",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "[65,84,43,73,78,86,79,75,69,61,45,49,44,48,44,48,13,10]",
+                "tot": "bin"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1020,
+        "y": 380,
+        "wires": [
+            [
+                "a44331a86a7dc340"
+            ]
+        ]
+    },
+    {
+        "id": "c87d0fd5fafe4f59",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "305158fcab074826",
+        "name": "Unsubscribe Action Builder",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "mqtt_tx",
+                "tot": "flow"
+            },
+            {
+                "t": "set",
+                "p": "action",
+                "pt": "msg",
+                "to": "unsubscribe",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 660,
+        "y": 640,
+        "wires": [
+            [
+                "32ad13252fa2a166"
+            ]
+        ]
+    },
+    {
+        "id": "195442578d4a91b3",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "g": "305158fcab074826",
+        "name": "Handle stop",
+        "info": "",
+        "x": 530,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "d2e1fd0a7353c49b",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "g": "a971c4f96839364e",
+        "name": "Handle start",
+        "info": "",
+        "x": 370,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "300b5a664aa446f0",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "Received data",
+        "info": "",
+        "x": 370,
+        "y": 740,
+        "wires": []
+    },
+    {
+        "id": "81acb1decc5c4b42",
+        "type": "link out",
+        "z": "f54138caa1c8a1ae",
+        "g": "69cc677d5eeb6285",
+        "name": "sub/unsub",
+        "mode": "link",
+        "links": [
+            "827d086314b3653a"
+        ],
+        "x": 1250,
+        "y": 320,
+        "wires": [],
+        "l": true
+    },
+    {
+        "id": "827d086314b3653a",
+        "type": "link in",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "sub/unsub",
+        "links": [
+            "81acb1decc5c4b42",
+            "32ad13252fa2a166"
+        ],
+        "x": 400,
+        "y": 800,
+        "wires": [
+            [
+                "83c2e443f9356992"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "32ad13252fa2a166",
+        "type": "link out",
+        "z": "f54138caa1c8a1ae",
+        "g": "305158fcab074826",
+        "name": "sub/unsub",
+        "mode": "link",
+        "links": [
+            "827d086314b3653a"
+        ],
+        "x": 870,
+        "y": 640,
+        "wires": [],
+        "l": true
+    },
+    {
+        "id": "6ad80085190e5ec4",
+        "type": "mqtt out",
+        "z": "f54138caa1c8a1ae",
+        "g": "8c88939dfc248608",
+        "name": "mqtt out",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "34867ff4d0f1a72d",
+        "x": 1200,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "bf72268f8a9d27a0",
+        "type": "link out",
+        "z": "f54138caa1c8a1ae",
+        "g": "305158fcab074826",
+        "name": "pub",
+        "mode": "link",
+        "links": [
+            "a3ff982e6c0d205d"
+        ],
+        "x": 850,
+        "y": 560,
+        "wires": [],
+        "l": true
+    },
+    {
+        "id": "a3ff982e6c0d205d",
+        "type": "link in",
+        "z": "f54138caa1c8a1ae",
+        "g": "8c88939dfc248608",
+        "name": "pub",
+        "links": [
+            "bf72268f8a9d27a0",
+            "a44331a86a7dc340",
+            "80ea757c32b9913b"
+        ],
+        "x": 1070,
+        "y": 580,
+        "wires": [
+            [
+                "6ad80085190e5ec4"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "80ea757c32b9913b",
+        "type": "link out",
+        "z": "f54138caa1c8a1ae",
+        "g": "409871c0949177f8",
+        "name": "pub",
+        "mode": "link",
+        "links": [
+            "a3ff982e6c0d205d"
+        ],
+        "x": 1510,
+        "y": 120,
+        "wires": [],
+        "l": true
+    },
+    {
+        "id": "a44331a86a7dc340",
+        "type": "link out",
+        "z": "f54138caa1c8a1ae",
+        "g": "69cc677d5eeb6285",
+        "name": "pub",
+        "mode": "link",
+        "links": [
+            "a3ff982e6c0d205d"
+        ],
+        "x": 1250,
+        "y": 380,
+        "wires": [],
+        "l": true
+    },
+    {
+        "id": "006879ed95d2920d",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "g": "8c88939dfc248608",
+        "name": "Basic mqtt publish",
+        "info": "",
+        "x": 1090,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "638e3329feab7f3b",
+        "type": "status",
+        "z": "f54138caa1c8a1ae",
+        "name": "",
+        "scope": null,
+        "x": 1450,
+        "y": 1060,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fa36ac27d76f6c9f",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "name": "image buffer",
+        "info": "",
+        "x": 1670,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "24209c5fc89d3273",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "name": "inference result",
+        "info": "",
+        "x": 1680,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "7c1022aaa1def947",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "name": "start or stop",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "start",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "stop",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 150,
+        "y": 360,
+        "wires": [
+            [
+                "cfdacde8f6653612",
+                "8732ffe74f7d75d7"
+            ],
+            [
+                "32e42483ac76b0e4",
+                "964fdf92823e0d1c"
+            ]
+        ]
+    },
+    {
+        "id": "a6e005eefcf3eefb",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "name": "original data",
+        "info": "",
+        "x": 1670,
+        "y": 960,
+        "wires": []
+    },
+    {
+        "id": "4834b4fbeb890aaf",
+        "type": "function",
+        "z": "f54138caa1c8a1ae",
+        "name": "Check if the target is detected",
+        "func": "if (Array.isArray(msg.payload)) {\n    var length = msg.payload.length;\n    if (length > 1) {\n        msg.payload = 1;\n    } else if (length === 0) {\n        msg.payload = 0;\n    } else {\n        msg.payload = 1;\n    }\n} else {\n    msg.payload = 0;\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1390,
+        "y": 1240,
+        "wires": [
+            [
+                "5b36c809f82364a8"
+            ]
+        ]
+    },
+    {
+        "id": "5b36c809f82364a8",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "name": "yes or no",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "1",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "0",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1620,
+        "y": 1240,
+        "wires": [
+            [
+                "50f7be4c6b69ddcc"
+            ],
+            [
+                "2119f860c6c1eb12"
+            ]
+        ]
+    },
+    {
+        "id": "50f7be4c6b69ddcc",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "name": "",
+        "property": "triggerMode",
+        "propertyType": "env",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "yes",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1750,
+        "y": 1200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2119f860c6c1eb12",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "name": "",
+        "property": "triggerMode",
+        "propertyType": "env",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "no",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1750,
+        "y": 1280,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "cfdacde8f6653612",
+        "type": "debug",
+        "z": "f54138caa1c8a1ae",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 200,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "7f40b6ba3ad0fd72",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "Add camera_id",
+        "rules": [
+            {
+                "t": "set",
+                "p": "camera_id",
+                "pt": "msg",
+                "to": "camera_id",
+                "tot": "flow",
+                "dc": true
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 700,
+        "y": 760,
+        "wires": [
+            [
+                "e5805b647a121dcc"
+            ]
+        ]
+    },
+    {
+        "id": "8732ffe74f7d75d7",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "a971c4f96839364e",
+        "name": "set flow.camera_id",
+        "rules": [
+            {
+                "t": "set",
+                "p": "camera_id",
+                "pt": "flow",
+                "to": "topic",
+                "tot": "msg",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "topic",
+                "tot": "msg",
+                "dc": true
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 410,
+        "y": 300,
+        "wires": [
+            [
+                "208a200fb554527a"
+            ]
+        ]
+    },
+    {
+        "id": "964fdf92823e0d1c",
+        "type": "delay",
+        "z": "f54138caa1c8a1ae",
+        "g": "305158fcab074826",
+        "name": "delay 0.2s",
+        "pauseType": "delay",
+        "timeout": "0.2",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 450,
+        "y": 640,
+        "wires": [
+            [
+                "c87d0fd5fafe4f59"
+            ]
+        ]
+    },
+    {
+        "id": "409871c0949177f8",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "7b60f4ba019f1749",
+            "23a2040bdd246943",
+            "e48cf7986bc612ae",
+            "6748f017d2dabecb",
+            "80ea757c32b9913b"
+        ],
+        "x": 274,
+        "y": 19,
+        "w": 1312,
+        "h": 142
+    },
+    {
+        "id": "305158fcab074826",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "32e42483ac76b0e4",
+            "c87d0fd5fafe4f59",
+            "195442578d4a91b3",
+            "32ad13252fa2a166",
+            "bf72268f8a9d27a0",
+            "964fdf92823e0d1c"
+        ],
+        "x": 354,
+        "y": 479,
+        "w": 612,
+        "h": 202
+    },
+    {
+        "id": "a971c4f96839364e",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "d2e1fd0a7353c49b",
+            "69cc677d5eeb6285",
+            "8732ffe74f7d75d7"
+        ],
+        "x": 274,
+        "y": 179,
+        "w": 1098,
+        "h": 268
+    },
+    {
+        "id": "cc6c35456a15da28",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "83c2e443f9356992",
+            "e5805b647a121dcc",
+            "43ac01de39db9fa4",
+            "7de5e61c8b98f05a",
+            "e27b61c642230636",
+            "300b5a664aa446f0",
+            "827d086314b3653a",
+            "7f40b6ba3ad0fd72"
+        ],
+        "x": 274,
+        "y": 699,
+        "w": 1132,
+        "h": 142
+    },
+    {
+        "id": "8c88939dfc248608",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "6ad80085190e5ec4",
+            "a3ff982e6c0d205d",
+            "006879ed95d2920d"
+        ],
+        "x": 974,
+        "y": 479,
+        "w": 312,
+        "h": 142
+    },
+    {
+        "id": "69cc677d5eeb6285",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "g": "a971c4f96839364e",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "34ff1840310f347b",
+            "208a200fb554527a",
+            "2191648825898ba5",
+            "81acb1decc5c4b42",
+            "a44331a86a7dc340"
+        ],
+        "x": 554,
+        "y": 279,
+        "w": 792,
+        "h": 142
+    },
+    {
+        "id": "34867ff4d0f1a72d",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "mqtt://localhost",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "3ed7f94d76aa1659",
+        "type": "tab",
+        "label": "人时统计",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "d8c32cd69e820824",
+        "type": "change",
+        "z": "3ed7f94d76aa1659",
+        "name": "send start",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "start",
+                "tot": "str",
+                "dc": true
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 260,
+        "y": 300,
+        "wires": [
+            [
+                "ea8f0e565497c617"
+            ]
+        ]
+    },
+    {
+        "id": "dec551c1844000a6",
+        "type": "change",
+        "z": "3ed7f94d76aa1659",
+        "name": "send stop",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "stop",
+                "tot": "str",
+                "dc": true
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 260,
+        "y": 380,
+        "wires": [
+            [
+                "ea8f0e565497c617"
+            ]
+        ]
+    },
+    {
+        "id": "901eabcb69540d8b",
+        "type": "inject",
+        "z": "3ed7f94d76aa1659",
+        "name": "Stop",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "grove_vision_ai_v2_a45f8280",
+        "payload": "",
+        "payloadType": "date",
+        "x": 130,
+        "y": 380,
+        "wires": [
+            [
+                "dec551c1844000a6"
+            ]
+        ]
+    },
+    {
+        "id": "a5afa64ffb7c4fa2",
+        "type": "inject",
+        "z": "3ed7f94d76aa1659",
+        "name": "Start",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "grove_vision_ai_v2_eb9e4d18",
+        "payload": "",
+        "payloadType": "date",
+        "x": 130,
+        "y": 300,
+        "wires": [
+            [
+                "d8c32cd69e820824"
+            ]
+        ]
+    },
+    {
+        "id": "ea8f0e565497c617",
+        "type": "subflow:f54138caa1c8a1ae",
+        "z": "3ed7f94d76aa1659",
+        "name": "",
+        "env": [
+            {
+                "name": "mqtt-broker",
+                "value": "34867ff4d0f1a72d",
+                "type": "conf-type"
+            },
+            {
+                "name": "triggerMode",
+                "value": "no",
+                "type": "str"
+            }
+        ],
+        "x": 500,
+        "y": 340,
+        "wires": [
+            [],
+            [
+                "7da62a46d4e557d5"
+            ],
+            [],
+            []
+        ]
+    },
+    {
+        "id": "81d3bbaed0a912d7",
+        "type": "change",
+        "z": "3ed7f94d76aa1659",
+        "name": "Known Camera IDs",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "[\"grove_vision_ai_v2_a45f8280\",  \"grove_vision_ai_v2_eb9e4d18\"]",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 210,
+        "y": 180,
+        "wires": [
+            [
+                "8305946ee182bbb6"
+            ]
+        ]
+    },
+    {
+        "id": "8305946ee182bbb6",
+        "type": "split",
+        "z": "3ed7f94d76aa1659",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "property": "payload",
+        "x": 370,
+        "y": 180,
+        "wires": [
+            [
+                "19f1a0fed4de7c86"
+            ]
+        ]
+    },
+    {
+        "id": "19f1a0fed4de7c86",
+        "type": "change",
+        "z": "3ed7f94d76aa1659",
+        "name": "msg.camera_id = payload",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "camera_id",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 550,
+        "y": 180,
+        "wires": [
+            [
+                "9a351ed3dca25c6b",
+                "69e89faef3aea34c",
+                "3075f7cf712b32ce"
+            ]
+        ]
+    },
+    {
+        "id": "fb11de363af92087",
+        "type": "function",
+        "z": "3ed7f94d76aa1659",
+        "name": "Calculate Person-Time & Uptime + Availability",
+        "func": "const device_id = msg.camera_id; \nif (!device_id) {\n    node.error(\"camera_id missing from msg! Cannot process data or availability.\");\n    return null; \n}\n\nvar startTime = flow.get(\"personTimeStartTime_\" + device_id);\nif (startTime === undefined) {\n    startTime = Date.now();\n    flow.set(\"personTimeStartTime_\" + device_id, startTime);\n    flow.set(\"personTimePreviousTimestamp_\" + device_id, startTime);\n    flow.set(\"personTimeTotalPersonSeconds_\" + device_id, 0);\n    node.warn(\"Initialized person-time tracking for \" + device_id + \". Start time: \" + startTime);\n}\n\nvar currentTime = Date.now();\nvar previousTimestamp = flow.get(\"personTimePreviousTimestamp_\" + device_id) || currentTime;\nvar totalPersonSeconds = flow.get(\"personTimeTotalPersonSeconds_\" + device_id) || 0;\n\nvar peopleCount = 0;\nif (msg.payload && Array.isArray(msg.payload)) {\n    peopleCount = msg.payload.length;\n}\n\nvar durationMs = currentTime - previousTimestamp;\nvar durationSeconds = durationMs / 1000.0;\n\nif (durationSeconds < 0) durationSeconds = 0;\n\nvar currentFramePersonSeconds = 0;\nvar isFirstFrame = (previousTimestamp === flow.get(\"personTimeStartTime_\" + device_id));\n\nif (durationSeconds > 0 || (isFirstFrame && durationSeconds === 0)) {\n    currentFramePersonSeconds = peopleCount * durationSeconds;\n    totalPersonSeconds += currentFramePersonSeconds;\n}\n\nflow.set(\"personTimeTotalPersonSeconds_\" + device_id, totalPersonSeconds);\nflow.set(\"personTimePreviousTimestamp_\" + device_id, currentTime);\n\nvar uptimeMs = currentTime - flow.get(\"personTimeStartTime_\" + device_id);\nvar uptimeHours = uptimeMs / 1000.0 /3600.0;\nuptimeHours = uptimeHours.toFixed(3); // 保留三位小数，结果为字符串\n\nconst dataMsg = {\n    topic: `vision_ai/${device_id}/state`,\n    payload: {\n        total_person_hours: (totalPersonSeconds / 3600.0).toFixed(3),\n        uptime_hours: uptimeHours,\n        current_people_count: peopleCount,\n    }\n};\n\nconst availabilityMsg = {\n    topic: `vision_ai/${device_id}/status`,\n    payload: \"online\",\n    retain: true\n};\n\nreturn [dataMsg, availabilityMsg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1020,
+        "y": 320,
+        "wires": [
+            [
+                "bb840e7627b96906"
+            ],
+            [
+                "bb840e7627b96906"
+            ]
+        ]
+    },
+    {
+        "id": "bb840e7627b96906",
+        "type": "mqtt out",
+        "z": "3ed7f94d76aa1659",
+        "name": "Publish HA Data & Discovery",
+        "topic": "",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "34867ff4d0f1a72d",
+        "x": 1380,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "7da62a46d4e557d5",
+        "type": "delay",
+        "z": "3ed7f94d76aa1659",
+        "name": "",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 740,
+        "y": 320,
+        "wires": [
+            [
+                "fb11de363af92087"
+            ]
+        ]
+    },
+    {
+        "id": "9a351ed3dca25c6b",
+        "type": "function",
+        "z": "3ed7f94d76aa1659",
+        "name": "Config: Person Hours Sensor",
+        "func": "const device_id = msg.camera_id;\nif (!device_id) {\n    node.error(\"camera_id missing from msg for discovery!\");\n    return null;\n}\nmsg.topic = `homeassistant/sensor/${device_id}/total_person_hours/config`;\nmsg.payload = {\n  name: `Total Person Hours`,\n  state_topic: `vision_ai/${device_id}/state`,\n  availability_topic: `vision_ai/${device_id}/status`,\n  payload_available: \"online\",\n  payload_not_available: \"offline\",\n  value_template: \"{{ value_json.total_person_hours }}\",\n  unit_of_measurement: \"person_hours\",\n  icon: \"mdi:account-clock\",\n  unique_id: `${device_id}_total_person_hours`,\n  device: {\n    identifiers: [device_id],\n    name: `${device_id}`,\n    manufacturer: \"Seeed Studio\"\n  }\n};\nmsg.retain = true;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 860,
+        "y": 140,
+        "wires": [
+            [
+                "bb840e7627b96906"
+            ]
+        ]
+    },
+    {
+        "id": "69e89faef3aea34c",
+        "type": "function",
+        "z": "3ed7f94d76aa1659",
+        "name": "Config: Uptime Sensor",
+        "func": "const device_id = msg.camera_id;\nif (!device_id) {\n    node.error(\"camera_id missing from msg for discovery!\");\n    return null;\n}\nmsg.topic = `homeassistant/sensor/${device_id}/uptime_seconds/config`;\nmsg.payload = {\n  name: `Uptime`,\n  state_topic: `vision_ai/${device_id}/state`,\n  availability_topic: `vision_ai/${device_id}/status`,\n  payload_available: \"online\",\n  payload_not_available: \"offline\",\n  value_template: \"{{ value_json.uptime_hours }}\",\n  unit_of_measurement: \"h\",\n  icon: \"mdi:timer-sand\",\n  unique_id: `${device_id}_uptime_hours`,\n  device: {\n    identifiers: [device_id],\n    name: `${device_id}`,\n    manufacturer: \"Seeed Studio\"\n  }\n};\nmsg.retain = true;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 840,
+        "y": 180,
+        "wires": [
+            [
+                "bb840e7627b96906"
+            ]
+        ]
+    },
+    {
+        "id": "3075f7cf712b32ce",
+        "type": "function",
+        "z": "3ed7f94d76aa1659",
+        "name": "Config: People Count Sensor",
+        "func": "const device_id = msg.camera_id;\nif (!device_id) {\n    node.error(\"camera_id missing from msg for discovery!\");\n    return null;\n}\nmsg.topic = `homeassistant/sensor/${device_id}/current_people_count/config`;\nmsg.payload = {\n  name: `Current People Count`,\n  state_topic: `vision_ai/${device_id}/state`,\n  availability_topic: `vision_ai/${device_id}/status`,\n  payload_available: \"online\",\n  payload_not_available: \"offline\",\n  value_template: \"{{ value_json.current_people_count }}\",\n  unit_of_measurement: \"people\",\n  icon: \"mdi:account-group\",\n  unique_id: `${device_id}_current_people_count`,\n  device: {\n    identifiers: [device_id],\n    name: `${device_id}`,\n    manufacturer: \"Seeed Studio\"\n  }\n};\nmsg.retain = true;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 860,
+        "y": 220,
+        "wires": [
+            [
+                "bb840e7627b96906"
+            ]
+        ]
+    },
+    {
+        "id": "6e0ff468b8c36f00",
+        "type": "inject",
+        "z": "3ed7f94d76aa1659",
+        "name": "Trigger HA Discovery for Known Devices",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "",
+        "payload": "true",
+        "payloadType": "bool",
+        "x": 260,
+        "y": 100,
+        "wires": [
+            [
+                "81d3bbaed0a912d7"
+            ]
+        ]
+    }
+]
