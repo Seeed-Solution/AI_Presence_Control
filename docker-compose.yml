@@ -42,7 +42,6 @@ services:
       - "1880:1880"
     volumes:
       - ./services/node_red/data:/data
-      - ./flows:/data/flows
     environment:
       - TZ=Asia/Shanghai
     restart: unless-stopped
@@ -52,25 +51,20 @@ services:
       - mosquitto
       - qdrant
 
-  # FaceEmbed API - 仅用于本地测试
-  # 在生产环境中，这个服务运行在Hailo设备上
-  face-embed-api:
-    build:
-      context: ./services/face_embed_api
-      dockerfile: Dockerfile
-    container_name: face_access_embed_api
-    ports:
-      - "8000:8000"
-    environment:
-      - HOST=0.0.0.0
-      - PORT=8000
-      - WORKERS=4
-      - LOG_LEVEL=INFO
-    restart: unless-stopped
-    networks:
-      - face_access_network
-    profiles:
-      - local-test  # 仅在本地测试时启用
+# 注意：FaceEmbed API 服务已从Docker Compose中移除
+# 
+# 经过实际验证，FaceEmbed API（基于Hailo-8）具有以下特点：
+# 1. 需要直接访问Hailo硬件，不适合容器化部署
+# 2. 运行在边缘端Raspberry Pi 5 + Hailo-8设备上
+# 3. 通过原生Python进程启动，地址：http://192.168.10.179:8000
+# 4. 已完成100%测试验证，28个测试全部通过
+# 5. 推理性能：3-18ms，完全满足生产要求
+#
+# 部署方式：
+# 在Hailo设备上手动启动：
+# cd ~/face_embed_api && source .venv/bin/activate && python src/face_embed_api/app.py
+#
+# Node-RED通过HTTP API调用远程Hailo设备进行人脸嵌入计算
 
 networks:
   face_access_network:

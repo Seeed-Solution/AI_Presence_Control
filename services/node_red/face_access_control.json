@@ -1,0 +1,1968 @@
+[
+    {
+        "id": "f54138caa1c8a1ae",
+        "type": "subflow",
+        "name": "Grove Vision AI V2 - Expert",
+        "info": "",
+        "category": "※camera-grove-vision-ai-v2",
+        "in": [
+            {
+                "x": 40,
+                "y": 360,
+                "wires": [
+                    {
+                        "id": "7c1022aaa1def947"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 1680,
+                "y": 740,
+                "wires": [
+                    {
+                        "id": "e27b61c642230636",
+                        "port": 0
+                    }
+                ]
+            },
+            {
+                "x": 1680,
+                "y": 840,
+                "wires": [
+                    {
+                        "id": "7de5e61c8b98f05a",
+                        "port": 0
+                    }
+                ]
+            },
+            {
+                "x": 1810,
+                "y": 1000,
+                "wires": [
+                    {
+                        "id": "e5805b647a121dcc",
+                        "port": 0
+                    }
+                ]
+            },
+            {
+                "x": 1930,
+                "y": 1240,
+                "wires": [
+                    {
+                        "id": "50f7be4c6b69ddcc",
+                        "port": 0
+                    },
+                    {
+                        "id": "2119f860c6c1eb12",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [
+            {
+                "name": "----- Device Settings -----",
+                "type": "str",
+                "value": "",
+                "ui": {
+                    "type": "none"
+                }
+            },
+            {
+                "name": "mqtt-broker",
+                "type": "mqtt-broker",
+                "value": "ff55020100010001",
+                "ui": {
+                    "icon": "font-awesome/fa-server",
+                    "label": {
+                        "zh-CN": "*Server",
+                        "en-US": "*Server"
+                    },
+                    "type": "conf-types"
+                }
+            },
+            {
+                "name": "!note_camera",
+                "type": "str",
+                "value": "",
+                "ui": {
+                    "label": {
+                        "zh-CN": "",
+                        "en-US": "....Note: You can also leave it blank and configure it dynamically through input"
+                    },
+                    "type": "none"
+                }
+            },
+            {
+                "name": "----- Output 4: Trigger -----",
+                "type": "str",
+                "value": "",
+                "ui": {
+                    "type": "none"
+                }
+            },
+            {
+                "name": "triggerMode",
+                "type": "str",
+                "value": "yes",
+                "ui": {
+                    "label": {
+                        "zh-CN": "When ...",
+                        "en-US": "When ..."
+                    },
+                    "type": "select",
+                    "opts": {
+                        "opts": [
+                            {
+                                "l": {
+                                    "zh-CN": "Detected",
+                                    "en-US": "Detected"
+                                },
+                                "v": "yes"
+                            },
+                            {
+                                "l": {
+                                    "zh-CN": "Not detected",
+                                    "en-US": "Not detected"
+                                },
+                                "v": "no"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "meta": {
+            "module": "Grove Vision AI V2 - Get Camera",
+            "version": "0.0.1",
+            "author": "seeed",
+            "license": "Apache-2.0"
+        },
+        "color": "#B8EA4F",
+        "outputLabels": [
+            "Original Image",
+            "Inference Result",
+            "Iriginal Data (only can connect to 'tracking analyze' node)",
+            "Detection Trigger"
+        ],
+        "status": {
+            "x": 1660,
+            "y": 1060,
+            "wires": [
+                {
+                    "id": "638e3329feab7f3b",
+                    "port": 0
+                }
+            ]
+        }
+    },
+    {
+        "id": "34ff1840310f347b",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "69cc677d5eeb6285",
+        "name": "subscribe Action Builder",
+        "rules": [
+            {
+                "t": "set",
+                "p": "action",
+                "pt": "msg",
+                "to": "subscribe",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "mqtt_tx",
+                "tot": "flow",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "qos",
+                "pt": "msg",
+                "to": "0",
+                "tot": "num"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 990,
+        "y": 320,
+        "wires": [
+            [
+                "81acb1decc5c4b42"
+            ]
+        ]
+    },
+    {
+        "id": "83c2e443f9356992",
+        "type": "mqtt in",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "when receive data",
+        "topic": "",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "34867ff4d0f1a72d",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 1,
+        "x": 590,
+        "y": 800,
+        "wires": [
+            [
+                "7f40b6ba3ad0fd72"
+            ]
+        ]
+    },
+    {
+        "id": "e5805b647a121dcc",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "Check msg is valid",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "nempty"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 830,
+        "y": 800,
+        "wires": [
+            [
+                "43ac01de39db9fa4",
+                "7de5e61c8b98f05a"
+            ]
+        ]
+    },
+    {
+        "id": "32e42483ac76b0e4",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "305158fcab074826",
+        "name": "send a stop command to camera",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "mqtt_rx",
+                "tot": "flow",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "[65,84,43,66,82,69,65,75,13,10]",
+                "tot": "bin"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 520,
+        "y": 560,
+        "wires": [
+            [
+                "bf72268f8a9d27a0"
+            ]
+        ]
+    },
+    {
+        "id": "7b60f4ba019f1749",
+        "type": "inject",
+        "z": "f54138caa1c8a1ae",
+        "d": true,
+        "g": "409871c0949177f8",
+        "name": "auto resend command",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "3",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "0",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 450,
+        "y": 120,
+        "wires": [
+            [
+                "e48cf7986bc612ae"
+            ]
+        ]
+    },
+    {
+        "id": "23a2040bdd246943",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "409871c0949177f8",
+        "name": "send a start command to camera",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "mqtt_rx",
+                "tot": "flow"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "[65,84,43,73,78,86,79,75,69,61,45,49,44,48,44,48,13,10]",
+                "tot": "bin"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1280,
+        "y": 120,
+        "wires": [
+            [
+                "80ea757c32b9913b"
+            ]
+        ]
+    },
+    {
+        "id": "e48cf7986bc612ae",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "g": "409871c0949177f8",
+        "name": "Confirm that the camera is currently expected to be connected",
+        "property": "mqtt_rx",
+        "propertyType": "flow",
+        "rules": [
+            {
+                "t": "nempty"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 850,
+        "y": 120,
+        "wires": [
+            [
+                "23a2040bdd246943"
+            ]
+        ]
+    },
+    {
+        "id": "6748f017d2dabecb",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "g": "409871c0949177f8",
+        "name": "reconnect logic",
+        "info": "",
+        "x": 380,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "43ac01de39db9fa4",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "get image",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.data.image",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "raw",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1080,
+        "y": 740,
+        "wires": [
+            [
+                "e27b61c642230636"
+            ]
+        ]
+    },
+    {
+        "id": "7de5e61c8b98f05a",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "get inference result",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.data.boxes",
+                "tot": "msg",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "raw",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1110,
+        "y": 800,
+        "wires": [
+            [
+                "4834b4fbeb890aaf"
+            ]
+        ],
+        "info": "[[118,150,237,175,100,0],[114,119,76,84,100,2]]"
+    },
+    {
+        "id": "e27b61c642230636",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "Check image is valid",
+        "property": "payload.length",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gte",
+                "v": "100",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1280,
+        "y": 740,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "208a200fb554527a",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "69cc677d5eeb6285",
+        "name": "override mqtt_tx and mqtt_rx",
+        "rules": [
+            {
+                "t": "set",
+                "p": "mqtt_tx",
+                "pt": "flow",
+                "to": "\"sscma/v0/\" & payload & \"/tx\"",
+                "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "mqtt_rx",
+                "pt": "flow",
+                "to": "\"sscma/v0/\" & payload & \"/rx\"",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 700,
+        "y": 360,
+        "wires": [
+            [
+                "34ff1840310f347b",
+                "2191648825898ba5"
+            ]
+        ]
+    },
+    {
+        "id": "2191648825898ba5",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "69cc677d5eeb6285",
+        "name": "send a start command to camera",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "mqtt_rx",
+                "tot": "flow",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "[65,84,43,73,78,86,79,75,69,61,45,49,44,48,44,48,13,10]",
+                "tot": "bin"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1020,
+        "y": 380,
+        "wires": [
+            [
+                "a44331a86a7dc340"
+            ]
+        ]
+    },
+    {
+        "id": "c87d0fd5fafe4f59",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "305158fcab074826",
+        "name": "Unsubscribe Action Builder",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "mqtt_tx",
+                "tot": "flow"
+            },
+            {
+                "t": "set",
+                "p": "action",
+                "pt": "msg",
+                "to": "unsubscribe",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 660,
+        "y": 640,
+        "wires": [
+            [
+                "32ad13252fa2a166"
+            ]
+        ]
+    },
+    {
+        "id": "195442578d4a91b3",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "g": "305158fcab074826",
+        "name": "Handle stop",
+        "info": "",
+        "x": 530,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "d2e1fd0a7353c49b",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "g": "a971c4f96839364e",
+        "name": "Handle start",
+        "info": "",
+        "x": 370,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "300b5a664aa446f0",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "Received data",
+        "info": "",
+        "x": 370,
+        "y": 740,
+        "wires": []
+    },
+    {
+        "id": "81acb1decc5c4b42",
+        "type": "link out",
+        "z": "f54138caa1c8a1ae",
+        "g": "69cc677d5eeb6285",
+        "name": "sub/unsub",
+        "mode": "link",
+        "links": [
+            "827d086314b3653a"
+        ],
+        "x": 1250,
+        "y": 320,
+        "wires": [],
+        "l": true
+    },
+    {
+        "id": "827d086314b3653a",
+        "type": "link in",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "sub/unsub",
+        "links": [
+            "81acb1decc5c4b42",
+            "32ad13252fa2a166"
+        ],
+        "x": 400,
+        "y": 800,
+        "wires": [
+            [
+                "83c2e443f9356992"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "32ad13252fa2a166",
+        "type": "link out",
+        "z": "f54138caa1c8a1ae",
+        "g": "305158fcab074826",
+        "name": "sub/unsub",
+        "mode": "link",
+        "links": [
+            "827d086314b3653a"
+        ],
+        "x": 870,
+        "y": 640,
+        "wires": [],
+        "l": true
+    },
+    {
+        "id": "6ad80085190e5ec4",
+        "type": "mqtt out",
+        "z": "f54138caa1c8a1ae",
+        "g": "8c88939dfc248608",
+        "name": "mqtt out",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "34867ff4d0f1a72d",
+        "x": 1200,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "bf72268f8a9d27a0",
+        "type": "link out",
+        "z": "f54138caa1c8a1ae",
+        "g": "305158fcab074826",
+        "name": "pub",
+        "mode": "link",
+        "links": [
+            "a3ff982e6c0d205d"
+        ],
+        "x": 850,
+        "y": 560,
+        "wires": [],
+        "l": true
+    },
+    {
+        "id": "a3ff982e6c0d205d",
+        "type": "link in",
+        "z": "f54138caa1c8a1ae",
+        "g": "8c88939dfc248608",
+        "name": "pub",
+        "links": [
+            "bf72268f8a9d27a0",
+            "a44331a86a7dc340",
+            "80ea757c32b9913b"
+        ],
+        "x": 1070,
+        "y": 580,
+        "wires": [
+            [
+                "6ad80085190e5ec4"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "80ea757c32b9913b",
+        "type": "link out",
+        "z": "f54138caa1c8a1ae",
+        "g": "409871c0949177f8",
+        "name": "pub",
+        "mode": "link",
+        "links": [
+            "a3ff982e6c0d205d"
+        ],
+        "x": 1510,
+        "y": 120,
+        "wires": [],
+        "l": true
+    },
+    {
+        "id": "a44331a86a7dc340",
+        "type": "link out",
+        "z": "f54138caa1c8a1ae",
+        "g": "69cc677d5eeb6285",
+        "name": "pub",
+        "mode": "link",
+        "links": [
+            "a3ff982e6c0d205d"
+        ],
+        "x": 1250,
+        "y": 380,
+        "wires": [],
+        "l": true
+    },
+    {
+        "id": "006879ed95d2920d",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "g": "8c88939dfc248608",
+        "name": "Basic mqtt publish",
+        "info": "",
+        "x": 1090,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "638e3329feab7f3b",
+        "type": "status",
+        "z": "f54138caa1c8a1ae",
+        "name": "",
+        "scope": null,
+        "x": 1450,
+        "y": 1060,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fa36ac27d76f6c9f",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "name": "image buffer",
+        "info": "",
+        "x": 1670,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "24209c5fc89d3273",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "name": "inference result",
+        "info": "",
+        "x": 1680,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "7c1022aaa1def947",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "name": "start or stop",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "start",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "stop",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 150,
+        "y": 360,
+        "wires": [
+            [
+                "cfdacde8f6653612",
+                "8732ffe74f7d75d7"
+            ],
+            [
+                "32e42483ac76b0e4",
+                "964fdf92823e0d1c"
+            ]
+        ]
+    },
+    {
+        "id": "a6e005eefcf3eefb",
+        "type": "comment",
+        "z": "f54138caa1c8a1ae",
+        "name": "original data",
+        "info": "",
+        "x": 1670,
+        "y": 960,
+        "wires": []
+    },
+    {
+        "id": "4834b4fbeb890aaf",
+        "type": "function",
+        "z": "f54138caa1c8a1ae",
+        "name": "Check if the target is detected",
+        "func": "if (Array.isArray(msg.payload)) {\n    var length = msg.payload.length;\n    if (length > 1) {\n        msg.payload = 1;\n    } else if (length === 0) {\n        msg.payload = 0;\n    } else {\n        msg.payload = 1;\n    }\n} else {\n    msg.payload = 0;\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1390,
+        "y": 1240,
+        "wires": [
+            [
+                "5b36c809f82364a8"
+            ]
+        ]
+    },
+    {
+        "id": "5b36c809f82364a8",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "name": "yes or no",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "1",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "0",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1620,
+        "y": 1240,
+        "wires": [
+            [
+                "50f7be4c6b69ddcc"
+            ],
+            [
+                "2119f860c6c1eb12"
+            ]
+        ]
+    },
+    {
+        "id": "50f7be4c6b69ddcc",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "name": "",
+        "property": "triggerMode",
+        "propertyType": "env",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "yes",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1750,
+        "y": 1200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2119f860c6c1eb12",
+        "type": "switch",
+        "z": "f54138caa1c8a1ae",
+        "name": "",
+        "property": "triggerMode",
+        "propertyType": "env",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "no",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1750,
+        "y": 1280,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "cfdacde8f6653612",
+        "type": "debug",
+        "z": "f54138caa1c8a1ae",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 200,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "7f40b6ba3ad0fd72",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "cc6c35456a15da28",
+        "name": "Add camera_id",
+        "rules": [
+            {
+                "t": "set",
+                "p": "camera_id",
+                "pt": "msg",
+                "to": "camera_id",
+                "tot": "flow",
+                "dc": true
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 700,
+        "y": 760,
+        "wires": [
+            [
+                "e5805b647a121dcc"
+            ]
+        ]
+    },
+    {
+        "id": "8732ffe74f7d75d7",
+        "type": "change",
+        "z": "f54138caa1c8a1ae",
+        "g": "a971c4f96839364e",
+        "name": "set flow.camera_id",
+        "rules": [
+            {
+                "t": "set",
+                "p": "camera_id",
+                "pt": "flow",
+                "to": "topic",
+                "tot": "msg",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "topic",
+                "tot": "msg",
+                "dc": true
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 410,
+        "y": 300,
+        "wires": [
+            [
+                "208a200fb554527a"
+            ]
+        ]
+    },
+    {
+        "id": "964fdf92823e0d1c",
+        "type": "delay",
+        "z": "f54138caa1c8a1ae",
+        "g": "305158fcab074826",
+        "name": "delay 0.2s",
+        "pauseType": "delay",
+        "timeout": "0.2",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 450,
+        "y": 640,
+        "wires": [
+            [
+                "c87d0fd5fafe4f59"
+            ]
+        ]
+    },
+    {
+        "id": "409871c0949177f8",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "7b60f4ba019f1749",
+            "23a2040bdd246943",
+            "e48cf7986bc612ae",
+            "6748f017d2dabecb",
+            "80ea757c32b9913b"
+        ],
+        "x": 274,
+        "y": 19,
+        "w": 1312,
+        "h": 142
+    },
+    {
+        "id": "305158fcab074826",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "32e42483ac76b0e4",
+            "c87d0fd5fafe4f59",
+            "195442578d4a91b3",
+            "32ad13252fa2a166",
+            "bf72268f8a9d27a0",
+            "964fdf92823e0d1c"
+        ],
+        "x": 354,
+        "y": 479,
+        "w": 612,
+        "h": 202
+    },
+    {
+        "id": "a971c4f96839364e",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "d2e1fd0a7353c49b",
+            "69cc677d5eeb6285",
+            "8732ffe74f7d75d7"
+        ],
+        "x": 274,
+        "y": 179,
+        "w": 1098,
+        "h": 268
+    },
+    {
+        "id": "cc6c35456a15da28",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "83c2e443f9356992",
+            "e5805b647a121dcc",
+            "43ac01de39db9fa4",
+            "7de5e61c8b98f05a",
+            "e27b61c642230636",
+            "300b5a664aa446f0",
+            "827d086314b3653a",
+            "7f40b6ba3ad0fd72"
+        ],
+        "x": 274,
+        "y": 699,
+        "w": 1132,
+        "h": 142
+    },
+    {
+        "id": "8c88939dfc248608",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "6ad80085190e5ec4",
+            "a3ff982e6c0d205d",
+            "006879ed95d2920d"
+        ],
+        "x": 974,
+        "y": 479,
+        "w": 312,
+        "h": 142
+    },
+    {
+        "id": "69cc677d5eeb6285",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "g": "a971c4f96839364e",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "34ff1840310f347b",
+            "208a200fb554527a",
+            "2191648825898ba5",
+            "81acb1decc5c4b42",
+            "a44331a86a7dc340"
+        ],
+        "x": 554,
+        "y": 279,
+        "w": 792,
+        "h": 142
+    },
+    {
+        "id": "34867ff4d0f1a72d",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "mqtt://localhost",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "face_access_main_flow",
+        "type": "tab",
+        "label": "人脸识别门禁控制",
+        "disabled": false,
+        "info": "基于Grove Vision AI V2和Hailo-8的人脸识别门禁系统主流程 - 简化配置版本"
+    },
+    {
+        "id": "global_config_trigger",
+        "type": "inject",
+        "z": "face_access_main_flow",
+        "name": "启动时加载配置 (Load on Start)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 20,
+        "wires": [
+            [
+                "global_config_node"
+            ]
+        ]
+    },
+    {
+        "id": "global_config_node",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "全局配置 (Global Config)",
+        "func": "// --- 全局配置 ---\n// 在此统一设置所有外部服务的地址和参数\n// 此节点将在启动时自动运行一次\n\n// Qdrant 向量数据库配置\nflow.set('qdrant_host', 'localhost');\nflow.set('qdrant_port', '6333');\nflow.set('qdrant_api_key', 'face_access_2025');\n\n// Hailo AI芯片 (人脸向量API) 配置\nflow.set('hailo_host', '192.168.10.179');\nflow.set('hailo_port', '8000');\n\n// Grove Vision AI 摄像头配置\nflow.set('image_width', 480);\nflow.set('image_height', 480);\n\nnode.log(\"Global configuration loaded.\");\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 20,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "api_url_configurator",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "API URL 配置器",
+        "func": "// 从Flow上下文中获取Hailo配置\nconst faceEmbedHost = flow.get('hailo_host') || '192.168.10.179';\nconst faceEmbedPort = flow.get('hailo_port') || '8000';\n\n// 设置API URL\nmsg.url = `http://${faceEmbedHost}:${faceEmbedPort}/embed`;\n\n// 添加超时配置\nmsg.timeout = 5000; // 5秒超时\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 280,
+        "wires": [
+            [
+                "face_embed_request"
+            ]
+        ]
+    },
+    {
+        "id": "face_embed_request",
+        "type": "http request",
+        "z": "face_access_main_flow",
+        "name": "FaceEmbed API (远程)",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "Content-Type",
+                "valueType": "other",
+                "valueValue": "application/json"
+            },
+            {
+                "keyType": "other",
+                "keyValue": "User-Agent",
+                "valueType": "other",
+                "valueValue": "NodeRED-FaceAccess/1.0"
+            }
+        ],
+        "x": 730,
+        "y": 280,
+        "wires": [
+            [
+                "vector_search_request"
+            ]
+        ]
+    },
+    {
+        "id": "vector_search_request",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "准备向量搜索",
+        "func": "// 获取人脸向量\nconst embedding = msg.payload.vector;\nconst confidence = msg.payload.confidence;\nconst processingTime = msg.payload.processing_time_ms;\n\n// 检查向量质量\nif (confidence < 0.5) {\n    node.warn(`Low face quality: ${confidence}`);\n    return null;\n}\n\n// 设备与Collection映射配置 - 在此处添加新设备\nconst deviceCollectionMap = {\n    'grove_vision_ai_v2_eb9e4d18': 'office_entrance',\n    'grove_vision_ai_v2_002': 'warehouse_door',\n    'grove_vision_ai_v2_003': 'lab_access',\n    'default': 'default_faces'\n};\n\n// 获取设备配置\nconst deviceId = msg.deviceId;\nconst collectionName = deviceCollectionMap[deviceId] || deviceCollectionMap['default'];\nconst threshold = 0.32;  // 相似度阈值，可在此处调整\n\n// 准备Qdrant搜索请求\nmsg.collectionName = collectionName;\nmsg.threshold = threshold;\nmsg.embedding = embedding;\nmsg.confidence = confidence;\nmsg.processingTime = processingTime;\n\n// 从Flow上下文中获取Qdrant配置\nconst qdrantHost = flow.get('qdrant_host') || 'localhost';\nconst qdrantPort = flow.get('qdrant_port') || '6333';\nmsg.url = `http://${qdrantHost}:${qdrantPort}/collections/${collectionName}/points/search`;\n\nmsg.payload = {\n    vector: embedding,\n    limit: 3,\n    with_payload: true,\n    score_threshold: 1 - threshold  // Qdrant使用余弦相似度，需要转换阈值\n};\n\n// 设置HTTP请求头\nconst qdrantApiKey = flow.get('qdrant_api_key');\nmsg.headers = { 'Content-Type': 'application/json' };\nif (qdrantApiKey) {\n    msg.headers['api-key'] = qdrantApiKey;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 960,
+        "y": 280,
+        "wires": [
+            [
+                "qdrant_search"
+            ]
+        ]
+    },
+    {
+        "id": "qdrant_search",
+        "type": "http request",
+        "z": "face_access_main_flow",
+        "name": "Qdrant搜索",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1170,
+        "y": 280,
+        "wires": [
+            [
+                "access_decision"
+            ]
+        ]
+    },
+    {
+        "id": "access_decision",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "访问决策",
+        "func": "const searchResult = msg.payload.result;\nconst deviceId = msg.deviceId;\nconst threshold = msg.threshold;\nconst timestamp = new Date().toISOString();\n\nlet decision = false;\nlet name = null;\nlet distance = 1.0;\nlet matchedId = null;\n\n// 检查搜索结果\nif (searchResult && searchResult.length > 0) {\n    node.log(searchResult);\n    const bestMatch = searchResult[0];\n    distance = 1 - bestMatch.score;  // 转换为距离\n    \n    if (distance <= threshold) {\n        decision = true;\n        name = bestMatch.payload.name;\n        matchedId = bestMatch.id;\n    }\n}\n\n// 构造结果消息\nconst result = {\n    ts: timestamp,\n    device_id: deviceId,\n    decision: decision,\n    name: name,\n    distance: parseFloat(distance.toFixed(4)),\n    confidence: msg.confidence,\n    processing_time_ms: msg.processingTime,\n    matched_id: matchedId\n};\n\n// 准备MQTT发布\nmsg.topic = `access/result/${deviceId}`;\nmsg.payload = result;\n\n// 保存到context用于日志记录\ncontext.set('lastAccess', result);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1370,
+        "y": 280,
+        "wires": [
+            [
+                "access_result_publisher",
+                "access_logger",
+                "0221797157934c01"
+            ]
+        ]
+    },
+    {
+        "id": "access_result_publisher",
+        "type": "mqtt out",
+        "z": "face_access_main_flow",
+        "name": "发布访问结果",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "mqtt_broker",
+        "x": 1570,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "access_logger",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "访问日志",
+        "func": "const result = msg.payload;\n\n// 记录访问日志\nnode.log(`Access Decision - Device: ${result.device_id}, Decision: ${result.decision}, Name: ${result.name || 'Unknown'}, Distance: ${result.distance}`);\n\n// 可以在这里添加更详细的日志记录逻辑\n// 例如写入文件、数据库等\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1570,
+        "y": 300,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "manual_enroll_trigger",
+        "type": "inject",
+        "z": "face_access_main_flow",
+        "name": "手动人脸入库 (张三)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "access/enroll/grove_vision_ai_v2_eb9e4d18",
+        "payload": "{\"name\":\"张三\",\"action\":\"start\",\"collection\":\"office_entrance\"}",
+        "payloadType": "json",
+        "x": 130,
+        "y": 440,
+        "wires": [
+            [
+                "enroll_processor"
+            ]
+        ]
+    },
+    {
+        "id": "enroll_processor",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "处理入库请求",
+        "func": "const payload = msg.payload;\nconst topic = msg.topic;\nconst deviceId = topic.split('/')[2];\n\n\n// 验证入库请求\nif (!payload.name || !payload.action || !payload.collection) {\n    node.error('Invalid enroll request: missing name, action, or collection');\n    return null;\n}\n\nif (payload.action === 'start') {\n    // 开始入库流程\n    msg.deviceId = deviceId;\n    msg.enrollName = payload.name;\n    msg.payload = {\n        action: 'start_collection',\n        name: payload.name,\n        device_id: deviceId\n    };\n    \n    // 设置入库状态\n    flow.set(`enroll_${deviceId}`, {\n        name: payload.name,\n        collection: payload.collection, // 存储目标库\n        status: 'collecting',\n        vectors: [], // 初始化向量数组\n        startTime: Date.now()\n    });\n    \n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 320,
+        "y": 440,
+        "wires": [
+            [
+                "enroll_frame_collector"
+            ]
+        ]
+    },
+    {
+        "id": "enroll_frame_collector",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "收集入库帧",
+        "func": "// 这个节点会监听后续的vision帧来收集人脸数据\n// 实际实现中需要与vision_frame_processor协调\n\nconst deviceId = msg.deviceId;\nconst enrollState = context.get(`enroll_${deviceId}`);\n\nif (!enrollState || enrollState.status !== 'collecting') {\n    return null;\n}\n\n// 发送开始收集的指令\nmsg.topic = `access/enroll_status/${deviceId}`;\nmsg.payload = {\n    status: 'collecting',\n    message: `开始收集 ${enrollState.name} 的人脸数据，请保持正面朝向摄像头`,\n    frames_needed: 10\n};\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 440,
+        "wires": [
+            [
+                "enroll_status_publisher"
+            ]
+        ]
+    },
+    {
+        "id": "enroll_status_publisher",
+        "type": "mqtt out",
+        "z": "face_access_main_flow",
+        "name": "发布入库状态",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "mqtt_broker",
+        "x": 740,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "95fddc256a11e927",
+        "type": "change",
+        "z": "face_access_main_flow",
+        "name": "send start",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "start",
+                "tot": "str",
+                "dc": true
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 240,
+        "y": 80,
+        "wires": [
+            [
+                "786320639347a67f"
+            ]
+        ]
+    },
+    {
+        "id": "d5fd94edc9d2f6bc",
+        "type": "change",
+        "z": "face_access_main_flow",
+        "name": "send stop",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "stop",
+                "tot": "str",
+                "dc": true
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 240,
+        "y": 160,
+        "wires": [
+            [
+                "786320639347a67f"
+            ]
+        ]
+    },
+    {
+        "id": "acd8dadac5c088d4",
+        "type": "inject",
+        "z": "face_access_main_flow",
+        "name": "Stop",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "grove_vision_ai_v2_eb9e4d18",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 160,
+        "wires": [
+            [
+                "d5fd94edc9d2f6bc"
+            ]
+        ]
+    },
+    {
+        "id": "950c446d7e951013",
+        "type": "inject",
+        "z": "face_access_main_flow",
+        "name": "Start",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "grove_vision_ai_v2_eb9e4d18",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 80,
+        "wires": [
+            [
+                "95fddc256a11e927"
+            ]
+        ]
+    },
+    {
+        "id": "786320639347a67f",
+        "type": "subflow:f54138caa1c8a1ae",
+        "z": "face_access_main_flow",
+        "name": "Grove Vision AI V2",
+        "env": [
+            {
+                "name": "mqtt-broker",
+                "value": "34867ff4d0f1a72d",
+                "type": "conf-type"
+            },
+            {
+                "name": "triggerMode",
+                "value": "yes",
+                "type": "str"
+            }
+        ],
+        "x": 480,
+        "y": 120,
+        "wires": [
+            [
+                "grove_data_combiner"
+            ],
+            [
+                "grove_data_combiner"
+            ],
+            [],
+            [
+                "detection_trigger_handler"
+            ]
+        ]
+    },
+    {
+        "id": "grove_data_combiner",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "Grove数据整合器",
+        "func": "// 整合Grove Vision AI V2的输出1(图像)和输出2(检测结果)\n// 直接组装成标准vision frame格式\n\nconst camera_id = msg.camera_id || 'grove_vision_ai_v2_eb9e4d18';\n\n// 判断数据来源：输出1是图像数据(buffer)，输出2是检测结果(array)\nif (Buffer.isBuffer(msg.payload) || typeof msg.payload === 'string') {\n    // 输出1: 原始图像数据\n    context.set(`image_${camera_id}`, {\n        img_b64: msg.payload,\n        timestamp: Date.now()\n    });\n    \n    // 图像数据不直接输出，等待检测结果\n    return null;\n    \n} else if (Array.isArray(msg.payload)) {\n    // 输出2: 检测结果 - 组合图像和检测框\n    const bboxes = msg.payload;\n    \n    // 获取对应的图像数据\n    const imageContext = context.get(`image_${camera_id}`);\n    if (!imageContext) {\n        node.warn('No image data found for camera: ' + camera_id);\n        return null;\n    }\n    \n    // 检查图像数据是否过期（超过3秒）\n    if (Date.now() - imageContext.timestamp > 3000) {\n        node.warn('Image data too old for camera: ' + camera_id);\n        context.set(`image_${camera_id}`, null);\n        return null;\n    }\n    \n    // 转换Grove Vision AI V2的bbox格式到标准格式\n    // Grove格式: [x_center, y_center, width, height, confidence, class]\n    const convertedBboxes = [];\n    if (Array.isArray(bboxes)) {\n        for (const bbox of bboxes) {\n            if (bbox.length < 5) continue;\n            \n            const x_center = bbox[0];\n            const y_center = bbox[1];\n            const width = bbox[2];\n            const height = bbox[3];\n            const confidence = bbox[4];\n            \n            // 从中心点坐标转换为左上角坐标\n            const x_topleft = x_center - width / 2;\n            const y_topleft = y_center - height / 2;\n            \n            // --- 强制边界框修正逻辑 (已修复浮点误差问题) ---\n            const maxImageWidth = flow.get('image_width') || 480;\n            const maxImageHeight = flow.get('image_height') || 480;\n\n            // 1. 计算原始的四个浮点数边界\n            const left = x_topleft;\n            const top = y_topleft;\n            const right = x_topleft + width;\n            const bottom = y_topleft + height;\n\n            // 2. 将边界限制在图像尺寸内，然后进行整数化，确保安全\n            const final_left = Math.round(Math.max(0, left));\n            const final_top = Math.round(Math.max(0, top));\n            const final_right = Math.round(Math.min(maxImageWidth, right));\n            const final_bottom = Math.round(Math.min(maxImageHeight, bottom));\n\n            // 3. 根据修正后的整数边界计算最终的整数 x, y, w, h\n            const final_x = final_left;\n            const final_y = final_top;\n            const final_w = final_right - final_left;\n            const final_h = final_bottom - final_top;\n\n            // 4. 再次检查尺寸有效性 (如果裁剪后宽度或高度<=0，则跳过)\n            if (final_w <= 0 || final_h <= 0) {\n                node.warn(`Bbox has zero size after clipping, skipping. Original: [${bbox.join(', ')}]`);\n                continue;\n            }\n            \n            const score = confidence / 100.0; // 转换为0-1范围\n            \n            convertedBboxes.push({\n                x: final_x,\n                y: final_y,\n                w: final_w,\n                h: final_h,\n                score: score\n            });\n        }\n    }\n    \n    const standardPayload = {\n        ts: new Date().toISOString(),\n        img_b64: imageContext.img_b64,\n        bboxes: convertedBboxes\n    };\n    \n    msg.deviceId = camera_id;\n    msg.topic = `vision/frames/${camera_id}`;\n    msg.payload = standardPayload;\n    \n    context.set(`image_${camera_id}`, null);\n    \n    return msg;\n    \n} else {\n    return null;\n}",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 730,
+        "y": 120,
+        "wires": [
+            [
+                "vision_frame_rate_limiter"
+            ]
+        ]
+    },
+    {
+        "id": "vision_frame_rate_limiter",
+        "type": "delay",
+        "z": "face_access_main_flow",
+        "name": "限制帧率 (3fps)",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 960,
+        "y": 120,
+        "wires": [
+            [
+                "vision_frame_processor"
+            ]
+        ]
+    },
+    {
+        "id": "detection_trigger_handler",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "检测触发处理",
+        "func": "// 处理Grove Vision AI V2的检测触发信号\n// 可用于统计、日志记录等\n\nconst camera_id = msg.camera_id || 'unknown';\nconst detected = msg.payload;\n\nif (detected) {\n    node.log(`Face detected by camera: ${camera_id}`);\n    \n    // 更新检测统计\n    const stats = context.get('detection_stats') || {};\n    const today = new Date().toDateString();\n    \n    if (!stats[today]) {\n        stats[today] = {};\n    }\n    if (!stats[today][camera_id]) {\n        stats[today][camera_id] = 0;\n    }\n    \n    stats[today][camera_id]++;\n    context.set('detection_stats', stats);\n}\n\nreturn null;  // 不继续传递消息",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 720,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "vision_frame_processor",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "处理视觉帧",
+        "func": "// 解析标准化的视觉帧数据\nconst payload = msg.payload;\nconst deviceId = msg.deviceId;\n\n// 检查是否处于入库模式\nconst enrollState = flow.get('enroll_' + deviceId);\n\nif (enrollState && enrollState.status === 'collecting') {\n    // 如果是入库模式，将消息路由到第二个输出端口\n    // 不需要选择最大人脸，每一帧都用于入库\n    if (!payload.bboxes || payload.bboxes.length === 0) {\n        return null; // 入库时也需要有人脸\n    }\n    \n    // 入库时也选择最大面积的人脸以保证质量\n    let maxBbox = null;\n    let maxArea = 0;\n    for (const bbox of payload.bboxes) {\n        const area = bbox.w * bbox.h;\n        if (area > maxArea && bbox.score > 0.7) { // 使用同样的分数阈值\n            maxArea = area;\n            maxBbox = bbox;\n        }\n    }\n\n    if (!maxBbox) {\n        node.warn('No valid face found for enrollment on ' + deviceId);\n        return null;\n    }\n\n    msg.payload = {\n        image_base64: payload.img_b64,\n        bbox: {\n            x: maxBbox.x,\n            y: maxBbox.y,\n            w: maxBbox.w,\n            h: maxBbox.h\n        }\n    };\n    \n    node.log(`Collecting frame for enrollment: ${deviceId}`);\n    return [null, msg]; // 发送到输出2\n}\n\n// --- 以下是正常的识别流程 ---\n\n// 验证数据格式\nif (!payload.bboxes || !Array.isArray(payload.bboxes) || payload.bboxes.length === 0) {\n    node.warn('No face detected in frame from ' + deviceId);\n    return null;\n}\n\n// 选择最大面积的人脸\nlet maxBbox = null;\nlet maxArea = 0;\n\nfor (const bbox of payload.bboxes) {\n    const area = bbox.w * bbox.h;\n    if (area > maxArea && bbox.score > 0.7) {\n        maxArea = area;\n        maxBbox = bbox;\n    }\n}\n\nif (!maxBbox) {\n    node.warn('No valid face bbox found for ' + deviceId);\n    return null;\n}\n\n// 准备FaceEmbed API请求\nmsg.deviceId = deviceId;\nmsg.originalPayload = payload;\nmsg.payload = {\n    image_base64: payload.img_b64,\n    bbox: {\n        x: maxBbox.x,\n        y: maxBbox.y,\n        w: maxBbox.w,\n        h: maxBbox.h\n    }\n};\n\nnode.log(`Processing face for ${deviceId}: bbox=${JSON.stringify(msg.payload.bbox)}, area=${maxArea}`);\nreturn [msg, null]; // 发送到输出1",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 310,
+        "y": 300,
+        "wires": [
+            [
+                "api_url_configurator"
+            ],
+            [
+                "api_url_configurator_enroll"
+            ]
+        ]
+    },
+    {
+        "id": "api_url_configurator_enroll",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "API URL (Enroll)",
+        "func": "const faceEmbedHost = flow.get('hailo_host') || '192.168.10.179';\nconst faceEmbedPort = flow.get('hailo_port') || '8000';\nmsg.url = `http://${faceEmbedHost}:${faceEmbedPort}/embed`;\nmsg.timeout = 5000;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 340,
+        "wires": [
+            [
+                "face_embed_request_enroll"
+            ]
+        ]
+    },
+    {
+        "id": "face_embed_request_enroll",
+        "type": "http request",
+        "z": "face_access_main_flow",
+        "name": "FaceEmbed API (Enroll)",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "Content-Type",
+                "valueType": "other",
+                "valueValue": "application/json"
+            }
+        ],
+        "x": 730,
+        "y": 340,
+        "wires": [
+            [
+                "collect_and_save_enroll_vector"
+            ]
+        ]
+    },
+    {
+        "id": "collect_and_save_enroll_vector",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "收集/平均/存储向量",
+        "func": "const deviceId = msg.deviceId;\nconst enrollState = flow.get('enroll_' + deviceId);\n\nif (!enrollState || enrollState.status !== 'collecting') {\n    node.warn('Not in collecting state, ignoring vector.');\n    return null;\n}\n\n// 1. 收集向量\nconst vector = msg.payload.vector;\nif (vector) {\n    enrollState.vectors.push(vector);\n}\nflow.set('enroll_' + deviceId, enrollState);\n\nconst collectedCount = enrollState.vectors.length;\nconst neededCount = 10;\n\n// 2. 发送进度更新\nconst statusUpdate = {\n    topic: `access/enroll_status/${deviceId}`,\n    payload: {\n        status: 'collecting',\n        message: `正在收集人脸数据... (${collectedCount}/${neededCount})`,\n        collected: collectedCount,\n        needed: neededCount\n    }\n};\n\n// 如果还没收集满，只发送进度，然后停止\nif (collectedCount < neededCount) {\n    return [statusUpdate, null];\n}\n\n// --- 如果收集完成，开始处理 --- \nnode.log(`Collected ${neededCount} vectors for ${enrollState.name}. Averaging and preparing...`);\nenrollState.status = 'saving';\nflow.set('enroll_' + deviceId, enrollState);\n\n// 3. 计算平均向量\nconst vectors = enrollState.vectors;\nconst vectorDim = vectors[0].length;\nconst avgVector = new Array(vectorDim).fill(0);\n\nfor (const v of vectors) {\n    for (let i = 0; i < vectorDim; i++) {\n        avgVector[i] += v[i];\n    }\n}\nfor (let i = 0; i < vectorDim; i++) {\n    avgVector[i] /= vectors.length;\n}\n\n// 4. 准备Qdrant Collection创建和Point入库\nconst qdrantHost = flow.get('qdrant_host') || 'localhost';\nconst qdrantPort = flow.get('qdrant_port') || '6333';\nconst collectionName = enrollState.collection;\n\nif (!collectionName) {\n    node.error(`Enrollment for ${enrollState.name} failed: Collection name not found in context.`);\n    const errorMsg = {\n        topic: `access/enroll_status/${deviceId}`,\n        payload: { status: 'error', message: '入库失败: 未指定目标数据库(collection)。' }\n    };\n    flow.set('enroll_' + deviceId, null); // 清理状态\n    return [errorMsg, null]; // 发送错误并停止\n}\n\n// 生成一个随机UUID作为Point ID\nconst pointId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {\n    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n});\n\n// **将入库数据存到消息中，供后续节点使用**\nmsg.qdrantPoint = {\n    points: [\n        {\n            id: pointId,\n            vector: avgVector,\n            payload: { name: enrollState.name }\n        }\n    ]\n};\nmsg.collectionName = collectionName;\n// 继承deviceId等信息\nconst qdrantChainMsg = { ...msg };\n\n// **准备创建Collection的请求**\nqdrantChainMsg.url = `http://${qdrantHost}:${qdrantPort}/collections/${collectionName}`;//注意这里没有/points\nqdrantChainMsg.method = 'PUT';\nqdrantChainMsg.payload = {\n    vectors: {\n        size: 512, // ArcFace model produces 512-d vectors\n        distance: \"Cosine\"\n    }\n};\n\n// 设置HTTP请求头\nconst qdrantApiKey = flow.get('qdrant_api_key');\nqdrantChainMsg.headers = { 'Content-Type': 'application/json' };\nif (qdrantApiKey) {\n    qdrantChainMsg.headers['api-key'] = qdrantApiKey;\n}\n\nconst finalStatusUpdate = {\n    topic: `access/enroll_status/${deviceId}`,\n    payload: {\n        status: 'saving',\n        message: '数据收集完成，正在创建集合并存入数据库...'\n    }\n};\n\n// 输出1: MQTT状态更新\n// 输出2: Qdrant创建集合的请求\nreturn [finalStatusUpdate, qdrantChainMsg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 970,
+        "y": 340,
+        "wires": [
+            [
+                "enroll_status_publisher"
+            ],
+            [
+                "qdrant_create_collection"
+            ]
+        ]
+    },
+    {
+        "id": "qdrant_create_collection",
+        "type": "http request",
+        "z": "face_access_main_flow",
+        "name": "Qdrant创建Collection",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1180,
+        "y": 400,
+        "wires": [
+            [
+                "prepare_qdrant_upsert"
+            ]
+        ]
+    },
+    {
+        "id": "prepare_qdrant_upsert",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "准备Qdrant入库",
+        "func": "const qdrantHost = flow.get('qdrant_host') || 'localhost';\nconst qdrantPort = flow.get('qdrant_port') || '6333';\n\n// 从上一个节点的消息中获取入库数据和集合名称\nconst pointPayload = msg.qdrantPoint;\nconst collectionName = msg.collectionName;\n\n// 检查上一个节点（创建集合）是否出错\n// Qdrant的PUT /collections/{name}在成功或已存在时都返回200 OK\n// 因此，任何其他状态码都表示一个需要注意的问题。\nif (msg.statusCode && msg.statusCode !== 200) {\n    node.error(`Failed to create or verify collection '${collectionName}'. Status: ${msg.statusCode}, Payload: ${JSON.stringify(msg.payload)}`);\n    // 错误将传递给下一个节点，并由 入库最终状态 节点处理\n}\n\nmsg.url = `http://${qdrantHost}:${qdrantPort}/collections/${collectionName}/points?wait=true`;\nmsg.method = 'PUT';\nmsg.payload = pointPayload;\n\n// 设置HTTP请求头\nconst qdrantApiKey = flow.get('qdrant_api_key');\nmsg.headers = { 'Content-Type': 'application/json' };\nif (qdrantApiKey) {\n    msg.headers['api-key'] = qdrantApiKey;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1390,
+        "y": 400,
+        "wires": [
+            [
+                "qdrant_upsert"
+            ]
+        ]
+    },
+    {
+        "id": "qdrant_upsert",
+        "type": "http request",
+        "z": "face_access_main_flow",
+        "name": "Qdrant入库",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1610,
+        "y": 400,
+        "wires": [
+            [
+                "enroll_final_status"
+            ]
+        ]
+    },
+    {
+        "id": "enroll_final_status",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "入库最终状态",
+        "func": "const deviceId = msg.deviceId;\nconst enrollState = flow.get('enroll_' + deviceId);\nlet finalMessage;\nif (msg.statusCode === 200 && msg.payload.status === 'ok') {\n    finalMessage = {\n        status: 'success',\n        message: `用户 ${enrollState.name} 人脸入库成功!`\n    };\n    node.log(`Enrollment success for ${enrollState.name}.`);\n} else {\n    finalMessage = {\n        status: 'error',\n        message: `用户 ${enrollState.name} 人脸入库失败: ${msg.payload.status.error}`\n    };\n    node.error(`Enrollment failed: ${JSON.stringify(msg.payload)}`);\n}\n\n// 清理上下文\nflow.set('enroll_' + deviceId, null);\n\nmsg.topic = `access/enroll_status/${deviceId}`;\nmsg.payload = finalMessage;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1810,
+        "y": 400,
+        "wires": [
+            [
+                "enroll_status_publisher"
+            ]
+        ]
+    },
+    {
+        "id": "0221797157934c01",
+        "type": "debug",
+        "z": "face_access_main_flow",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1470,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "mqtt_broker",
+        "type": "mqtt-broker",
+        "name": "Face Access MQTT Broker",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "system/nodered",
+        "birthQos": "0",
+        "birthRetain": "true",
+        "birthPayload": "online",
+        "birthMsg": {},
+        "closeTopic": "system/nodered",
+        "closeQos": "0",
+        "closeRetain": "true",
+        "closePayload": "offline",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "sessionExpiry": ""
+    }
+]

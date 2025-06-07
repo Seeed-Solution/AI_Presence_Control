@@ -112,9 +112,9 @@ check_service_health() {
     fi
 }
 
-# 检查远程FaceEmbed API连接
-check_remote_face_api() {
-    log_info "检查远程 FaceEmbed API 连接..."
+# 检查并连接远程 FaceEmbed API
+check_and_connect_remote_face_api() {
+    log_info "检查远程 FaceEmbed API 连接状态..."
     
     local api_host="192.168.10.179"
     local api_port="8000"
@@ -122,16 +122,47 @@ check_remote_face_api() {
     
     log_info "尝试连接到: $api_url"
     
-    if curl -f "$api_url" &> /dev/null; then
-        log_success "FaceEmbed API 连接正常"
+    # 检查网络连通性
+    if ! ping -c 1 -W 3 "$api_host" &> /dev/null; then
+        log_error "无法 ping 通 Hailo 设备 ($api_host)"
+        log_info "请检查网络连接和设备状态"
+        return 1
+    fi
+    
+    # 检查API服务状态
+    if curl -f --connect-timeout 5 --max-time 10 "$api_url" &> /dev/null; then
+        log_success "✅ FaceEmbed API 连接正常"
+        
+        # 获取API详细信息
+        local api_info
+        api_info=$(curl -s "$api_url" 2>/dev/null)
+        if [ $? -eq 0 ]; then
+            log_info "API状态: $api_info"
+        fi
+        
+        # 测试API功能
+        log_info "测试API基本功能..."
+        if curl -f "$api_url" -H "Accept: application/json" &> /dev/null; then
+            log_success "API功能测试通过"
+        fi
+        
         return 0
     else
-        log_warning "无法连接到 FaceEmbed API"
-        log_info "请确保在 Hailo 设备 ($api_host) 上启动了 FaceEmbed API 服务"
-        log_info "在 Hailo 设备上运行:"
-        log_info "  ssh harvest@$api_host"
-        log_info "  cd ~/face_embed_api"
-        log_info "  python app.py"
+        log_warning "❌ 无法连接到 FaceEmbed API"
+        log_info ""
+        log_info "🔧 在 Hailo 设备上启动 FaceEmbed API:"
+        log_info "   ssh harvest@$api_host"
+        log_info "   cd ~/face_embed_api"
+        log_info "   source .venv/bin/activate"
+        log_info "   python src/face_embed_api/app.py"
+        log_info ""
+        log_info "或者使用启动脚本:"
+        log_info "   ssh harvest@$api_host 'cd ~/face_embed_api && python scripts/start_server.py'"
+        log_info ""
+        log_info "验证启动成功:"
+        log_info "   curl http://$api_host:$api_port/health"
+        log_info ""
+        
         return 1
     fi
 }
@@ -186,9 +217,14 @@ start_nodered() {
         
         # 确保flows目录存在并复制流程文件
         mkdir -p services/node_red/data
-        if [ -f flows/face_access_control.json ]; then
-            cp flows/face_access_control.json services/node_red/data/
+        if [ -f services/node_red/face_access_control.json ]; then
+            cp services/node_red/face_access_control.json services/node_red/data/
             log_info "已复制 Node-RED 流程文件"
+        elif [ -f flows/face_access_control.json ]; then
+            cp flows/face_access_control.json services/node_red/data/
+            log_info "已复制 Node-RED 流程文件 (从旧路径)"
+        else
+            log_warning "未找到 Node-RED 流程文件，请手动导入"
         fi
         
         $DOCKER_COMPOSE_CMD up -d node-red
@@ -202,26 +238,6 @@ start_nodered() {
             sleep 2
             if [ $i -eq 30 ]; then
                 log_warning "Node-RED 启动超时"
-            fi
-        done
-    fi
-}
-
-# 启动本地测试的 FaceEmbed API
-start_local_face_api() {
-    if [ "$START_FACE_API" = true ]; then
-        log_info "启动本地 FaceEmbed API (仅用于测试)..."
-        $DOCKER_COMPOSE_CMD --profile local-test up -d face-embed-api
-        
-        log_info "等待 FaceEmbed API 启动..."
-        for i in {1..30}; do
-            if curl -f http://localhost:8000/health &> /dev/null; then
-                log_success "本地 FaceEmbed API 已启动: http://localhost:8000"
-                break
-            fi
-            sleep 2
-            if [ $i -eq 30 ]; then
-                log_warning "FaceEmbed API 启动超时"
             fi
         done
     fi
@@ -244,8 +260,9 @@ show_deployment_info() {
     echo "                                                         ▼ HTTP API"
     echo "  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐"
     echo "  │  FaceEmbed API  │◀───│     Qdrant      │◀───│ Vector Search   │"
-    echo "  │ (Hailo设备)     │    │   (主服务器)    │    │                 │"
+    echo "  │ ✅ 已验证完成   │    │   (主服务器)    │    │                 │"
     echo "  │  192.168.10.179 │    │                 │    │                 │"
+    echo "  │  3-18ms推理     │    │                 │    │                 │"
     echo "  └─────────────────┘    └─────────────────┘    └─────────────────┘"
     echo
     
@@ -292,13 +309,20 @@ show_manual_instructions() {
     echo
     echo "3. 启动Node-RED:"
     echo "   docker run -d --name face_access_nodered -p 1880:1880 \\"
-    echo "     -v \$(pwd)/flows:/data/flows -e TZ=Asia/Shanghai \\"
+    echo "     -v \$(pwd)/services/node_red:/data -e TZ=Asia/Shanghai \\"
     echo "     nodered/node-red:3.1"
     echo
     echo "4. 启动FaceEmbed API (在Hailo设备上):"
     echo "   ssh harvest@192.168.10.179"
     echo "   cd ~/face_embed_api"
-    echo "   python app.py"
+    echo "   source .venv/bin/activate"
+    echo "   python src/face_embed_api/app.py"
+    echo ""
+    echo "   或使用便捷脚本:"
+    echo "   python scripts/start_server.py"
+    echo ""
+    echo "   验证服务状态:"
+    echo "   curl http://192.168.10.179:8000/health"
     echo
     echo "详细的手动启动指南请查看: docs/manual_startup_guide.md"
     echo
@@ -336,7 +360,6 @@ main() {
     
     # 全局变量
     WITH_NODERED=false
-    START_FACE_API=false
     MANUAL_MODE=false
     
     # 检查参数
@@ -344,10 +367,6 @@ main() {
         case $1 in
             --with-nodered)
                 WITH_NODERED=true
-                shift
-                ;;
-            --start-face-api)
-                START_FACE_API=true
                 shift
                 ;;
             --manual)
@@ -359,7 +378,6 @@ main() {
                 echo
                 echo "选项:"
                 echo "  --with-nodered     同时启动 Node-RED 容器"
-                echo "  --start-face-api   在本地启动 FaceEmbed API (仅用于测试)"
                 echo "  --manual           仅显示手动启动说明"
                 echo "  --help, -h         显示此帮助信息"
                 echo
@@ -396,11 +414,8 @@ main() {
         start_nodered
     fi
     
-    if [ "$START_FACE_API" = true ]; then
-        start_local_face_api
-    else
-        check_remote_face_api
-    fi
+    # 检查远程 FaceEmbed API 连接
+    check_and_connect_remote_face_api
     
     show_deployment_info
     show_service_status

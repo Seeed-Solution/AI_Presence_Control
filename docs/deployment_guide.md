@@ -292,7 +292,7 @@ docker logs face_access_nodered
 open http://localhost:1880
 
 # 检查流程配置
-# 导入 flows/face_access_control.json
+# 导入 services/node_red/face_access_control.json
 ```
 
 ### 日志分析
@@ -350,7 +350,7 @@ const apiTimeout = 5000;       // API超时时间(ms)
 docker cp face_access_qdrant:/qdrant/storage ./backup/qdrant_$(date +%Y%m%d)
 
 # 备份Node-RED流程
-cp flows/face_access_control.json backup/
+cp services/node_red/face_access_control.json backup/
 
 # 备份配置文件
 tar -czf backup/config_$(date +%Y%m%d).tar.gz services/*/config/

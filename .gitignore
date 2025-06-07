@@ -1,0 +1,6 @@
+# Qdrant local storage
+/services/qdrant/storage/ 
+*.pyc
+*.log
+services/.DS_Store
+.DS_Store
