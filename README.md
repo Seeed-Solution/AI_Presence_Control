@@ -192,6 +192,7 @@ Topic: vision/frames/grove_vision_ai_v2_001
   ]
 }
 ```
+*注：此为Node-RED整合后的标准化格式，详情参见[数据流文档](docs/DATA_FLOW.md)。*
 
 #### 访问结果
 ```json
@@ -203,7 +204,18 @@ Topic: access/result/grove_vision_ai_v2_001
   "name": "张三",
   "distance": 0.28,
   "confidence": 0.95,
-  "processing_time_ms": 280
+  "processing_time_ms": 280,
+  "matched_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+}
+```
+
+#### 人脸入库
+```json
+Topic: access/enroll/{device_id}
+{
+  "name": "李四",
+  "action": "start",
+  "collection": "office_entrance"
 }
 ```
 
@@ -349,6 +361,9 @@ docker-compose logs -f node-red
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
 ## 🆘 技术支持
+
+### 文档
+- 📄 **[数据流与格式说明](docs/DATA_FLOW.md)**：模块间详细的数据流和格式文档。
 
 ### 部署支持
 - 📖 查看 [部署指南](docs/deployment_guide.md)
