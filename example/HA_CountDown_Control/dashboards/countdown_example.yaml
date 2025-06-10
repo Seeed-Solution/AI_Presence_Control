@@ -1,0 +1,67 @@
+# 这是一个Home Assistant Lovelace仪表盘视图的示例配置文件。
+#
+# 如何使用:
+# 1. 在HA仪表盘，点击右上角的三个点，选择 "编辑仪表盘"。
+# 2. 点击右下角的 "+" 按钮添加一个新视图。
+# 3. 为视图命名，例如 "倒计时监控"。
+# 4. 再次点击右上角的三个点，选择 "原始配置编辑器"。
+# 5. 将此文件 `views:` 列表下的内容粘贴到您的仪表盘配置中。
+#
+# 注意: 
+# - 此配置依赖 HACS 中安装的 `timer-bar-card` 社区卡片以获得最佳视觉效果。
+#   如果您未安装该卡片，可以将 `type: custom:timer-bar-card` 更换为 `type: entity` 来使用原生卡片显示。
+# - 请将所有 `timer.your_timer_entity_id` 替换为您在HA中创建的Timer助手的实体ID。
+# - 控制按钮（+5分钟、开始、暂停、停止）仅对特定管理员用户可见。请务必将 `YOUR_USER_ID_HERE` 修改为您自己的用户ID。
+#   您可以在 HA 的 "人员" -> "用户" 标签页中找到您的用户ID。
+views:
+  - title: 倒计时监控
+    path: countdown-demo
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: custom:timer-bar-card
+            # 实体ID应与您创建的Timer助手完全匹配, e.g., timer.face_auth_timer
+            entity: timer.your_timer_entity_id
+            name: 剩余授权时间
+            invert: true
+
+          - type: conditional
+            conditions:
+              - condition: user
+                users:
+                  - YOUR_USER_ID_HERE # <-- 在这里替换成您的管理员用户ID
+            card:
+              type: horizontal-stack
+              cards:
+                - type: button
+                  name: "+5 分钟"
+                  icon: mdi:timer-plus
+                  tap_action:
+                    action: call-service
+                    # 此服务调用同目录 `scripts/timer_controls.yaml` 中定义的脚本。
+                    # 请确保已将该脚本配置到 Home Assistant 中。
+                    service: script.add_timer_5min
+                - type: button
+                  name: "开始"
+                  icon: mdi:play
+                  tap_action:
+                    action: call-service
+                    service: timer.start
+                    target:
+                      entity_id: timer.your_timer_entity_id
+                - type: button
+                  name: "暂停"
+                  icon: mdi:pause
+                  tap_action:
+                    action: call-service
+                    service: timer.pause
+                    data:
+                      entity_id: timer.your_timer_entity_id
+                - type: button
+                  name: "停止"
+                  icon: mdi:stop-circle-outline
+                  tap_action:
+                    action: call-service
+                    service: timer.cancel
+                    data:
+                      entity_id: timer.your_timer_entity_id

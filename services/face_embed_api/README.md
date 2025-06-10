@@ -60,7 +60,7 @@ uv sync
 
 ```bash
 # 使用启动脚本 (推荐)
-python scripts/start_server.py
+uv run scripts/start_server.py
 
 # 或直接启动
 cd src && python -m face_embed_api.app

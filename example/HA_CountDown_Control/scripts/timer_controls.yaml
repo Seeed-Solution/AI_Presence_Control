@@ -1,0 +1,41 @@
+# 这是一个Home Assistant脚本的示例配置文件。
+#
+# 如何使用:
+# 1. 将此文件的内容复制到您的 `scripts.yaml` 文件中，或者
+#    在 `configuration.yaml` 中通过 `script: !include scripts.yaml` 的方式来引用。
+#    如果您使用 packages 目录，也可以将此文件放入其中。
+# 2. 确保 Home Assistant 重启或重新加载脚本配置以使此脚本生效。
+# 3. 【重要】将文件中所有的 `timer.your_timer_entity_id` 替换为您在HA中创建的Timer助手的实体ID。
+#
+# 此脚本 (add_timer_5min) 的作用是：
+# - 如果计时器正在运行或暂停，它会在当前剩余时间的基础上增加5分钟。
+# - 如果计时器已停止或完成，它会启动一个全新的5分钟计时。
+#
+# 在Lovelace仪表盘中，可以通过调用服务 `script.add_timer_5min` 来执行此脚本。
+
+add_timer_5min:
+  alias: 添加5分钟到计时器
+  description: 为人脸识别授权计时器添加5分钟
+  mode: single
+  sequence:
+    - choose:
+        - conditions:
+            - condition: template
+              # 确保此处的实体ID与您的Timer助手匹配
+              value_template: "{{ states('timer.your_timer_entity_id') in ['active', 'paused'] }}"
+          sequence:
+            - variables:
+                remaining: "{{ state_attr('timer.your_timer_entity_id', 'remaining') }}"
+                remaining_seconds: >-
+                  {{ (remaining | as_timedelta).total_seconds() | int if remaining and remaining != 'unknown' else 0 }}
+                total_seconds: "{{ remaining_seconds + 300 }}"
+                duration_str: "{{ total_seconds | int | timestamp_custom('%H:%M:%S', false) }}"
+            - service: timer.start
+              data:
+                entity_id: timer.your_timer_entity_id
+                duration: "{{ duration_str }}"
+      default:
+        - service: timer.start
+          data:
+            entity_id: timer.your_timer_entity_id
+            duration: "00:05:00" 

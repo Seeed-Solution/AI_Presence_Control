@@ -276,25 +276,6 @@ flow.set('image_width', 480);
 flow.set('image_height', 480);
 ```
 
-## ⚡ 性能监控
-
-### Grafana仪表板
-
-- **系统监控**：http://localhost:3000
-- **用户名/密码**：admin/admin123
-- **监控指标**：
-  - API响应时间
-  - 并发连接数
-  - 错误率统计
-  - 设备在线状态
-
-### Prometheus指标
-
-- FaceEmbed API性能 (192.168.10.179:8000/metrics)
-- Qdrant向量库状态
-- Node-RED流程状态
-- MQTT消息统计
-
 ## 🚨 故障排除
 
 ### 常见问题
@@ -347,6 +328,17 @@ docker-compose logs -f node-red
 - [ ] Grove Vision AI V2完整集成测试
 - [ ] 端到端分布式流程验证
 - [ ] 多设备并发性能测试
+
+## 🧩 示例应用 (Example Applications)
+
+### Home Assistant 倒计时授权控制
+
+- **路径**: [`example/HA_CountDown_Control`](./example/HA_CountDown_Control)
+- **简介**: 一个轻量级的Home Assistant集成示例，演示了如何将本系统的人脸识别成功事件（通过MQTT）转化为对设备的限时授权。每次成功验证后，HA会启动一个15分钟的倒计时，并在到期后自动关闭指定设备。
+- **特点**:
+  - **无代码集成**: 完全基于HA原生蓝图（Blueprint）和计时器（Timer）实现。
+  - **实时UI**: 提供Lovelace仪表盘示例，可实时监控剩余时间。
+  - **管理员控制**: 支持管理员手动加时、暂停或终止计时。
 
 ## 🤝 贡献指南
 

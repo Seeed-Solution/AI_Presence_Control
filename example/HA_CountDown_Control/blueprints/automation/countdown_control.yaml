@@ -1,0 +1,80 @@
+blueprint:
+  name: Robust Countdown Control (MQTT triggered)
+  domain: automation
+  description: >
+    Listens for an MQTT event to start a timer and turn on a device. 
+    Turns off the device when the timer finishes. 
+    This is a robust implementation that handles multiple trigger events correctly.
+    Requires a pre-created Timer helper entity.
+  input:
+    mqtt_topic:
+      name: MQTT Topic (for success event)
+      description: "Listens to this topic. Expects a JSON payload with a 'decision' key, e.g., {\"decision\": true}."
+      default: "access/verify"
+    target_entity:
+      name: Target Device
+      description: The switch, light, or other entity to be controlled.
+      selector:
+        entity:
+          domain: [switch, light, input_boolean]
+    timer_entity:
+      name: Timer Helper
+      description: The pre-created timer helper for the countdown. Go to Settings > Devices & Services > Helpers to create one.
+      selector:
+        entity:
+          domain: timer
+    duration_minutes:
+      name: Duration (minutes)
+      description: The countdown duration after a successful authentication event.
+      default: 15
+
+# This automation has two triggers but acts as a single logical unit.
+# The 'mode: single' ensures that actions don't run on top of each other,
+# but the triggers are for distinct events (start vs. finish).
+mode: single
+
+trigger:
+  # Trigger 1: A successful authentication message is received via MQTT.
+  - platform: mqtt
+    topic: !input mqtt_topic
+    payload: 'True'
+    value_template: '{{ value_json.decision == true }}'
+
+  # Trigger 2: The timer has finished its countdown.
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      # We only care about the specific timer entity linked to this automation.
+      entity_id: !input timer_entity
+
+action:
+  - choose:
+      # === CASE 1: Triggered by MQTT ===
+      # This branch runs when a valid face is detected.
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.platform == 'mqtt' }}"
+        sequence:
+          # This defines a local variable 'minutes' using the blueprint input.
+          # This is a robust way to ensure the value is available in this context.
+          - variables:
+              minutes: !input duration_minutes
+          # Action: Start or restart the timer using the local variable.
+          # The actions to turn on the device have been removed.
+          - service: timer.start
+            target:
+              entity_id: !input timer_entity
+            data:
+              duration: "{{ minutes | int(15) * 60 }}"
+
+      # === CASE 2: Triggered by Timer Finishing ===
+      # This branch runs when the countdown reaches zero. It does not
+      # need to access 'duration_minutes', thus avoiding the error.
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.platform == 'event' }}"
+        sequence:
+          # Action: Turn off the target device.
+          - service: homeassistant.turn_off
+            target:
+              entity_id: !input target_entity 
