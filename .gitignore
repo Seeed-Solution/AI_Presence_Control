@@ -4,3 +4,8 @@
 *.log
 services/.DS_Store
 .DS_Store
+/prompt/
+/docs/process/
+/data/
+/clinerules/
+
