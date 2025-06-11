@@ -1,18 +1,18 @@
 #!/bin/bash
-# 人脸识别门禁系统简化启动脚本 - 调试版本
+# Simplified startup script for the Face Recognition Access Control System - Debug Version
 
 set -e
 
-echo "🚀 启动人脸识别门禁系统 (简化版本)..."
+echo "🚀 Starting Face Recognition Access Control System (Simplified Version)..."
 
-# 颜色定义
+# Color Definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 日志函数
+# Logging Functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
@@ -29,137 +29,137 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 检查 Docker 和 Docker Compose
+# Check for Docker and Docker Compose
 check_prerequisites() {
-    log_info "检查系统依赖..."
+    log_info "Checking system dependencies..."
     
     if ! command -v docker &> /dev/null; then
-        log_error "Docker 未安装，请先安装 Docker"
+        log_error "Docker is not installed. Please install Docker first."
         exit 1
     fi
     
     if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
-        log_error "Docker Compose 未安装，请先安装 Docker Compose"
+        log_error "Docker Compose is not installed. Please install Docker Compose first."
         exit 1
     fi
     
-    # 检查 Docker 服务状态
+    # Check Docker service status
     if ! docker info &> /dev/null; then
-        log_error "Docker 服务未运行，请启动 Docker 服务"
+        log_error "Docker service is not running. Please start the Docker service."
         exit 1
     fi
     
-    log_success "系统依赖检查通过"
+    log_success "System dependencies check passed."
 }
 
-# 创建必要的目录
+# Create necessary directories
 create_directories() {
-    log_info "创建必要的目录..."
+    log_info "Creating necessary directories..."
     
     mkdir -p services/qdrant/storage
     mkdir -p services/mqtt/data
     mkdir -p services/mqtt/log
     mkdir -p services/node_red/data
     
-    log_success "目录创建完成"
+    log_success "Directories created."
 }
 
-# 启动基础服务
+# Start infrastructure services
 start_infrastructure() {
-    log_info "启动基础服务 (Qdrant, MQTT)..."
+    log_info "Starting infrastructure services (Qdrant, MQTT)..."
     
-    # 检查并设置Docker Compose命令
+    # Check and set Docker Compose command
     if command -v docker-compose &> /dev/null; then
         DOCKER_COMPOSE_CMD="docker-compose"
     else
         DOCKER_COMPOSE_CMD="docker compose"
     fi
     
-    # 启动基础服务
+    # Start infrastructure services
     $DOCKER_COMPOSE_CMD up -d qdrant mosquitto
     
-    # 等待服务启动
-    log_info "等待服务启动..."
+    # Wait for services to start
+    log_info "Waiting for services to start..."
     sleep 10
     
-    # 检查服务状态
+    # Check service status
     check_service_health
 }
 
-# 检查服务健康状态
+# Check service health status
 check_service_health() {
-    log_info "检查服务健康状态..."
+    log_info "Checking service health..."
     
-    # 检查 Qdrant
-    log_info "检查 Qdrant 服务..."
+    # Check Qdrant
+    log_info "Checking Qdrant service..."
     for i in {1..30}; do
         if curl -f http://localhost:6333/health &> /dev/null; then
-            log_success "Qdrant 服务正常 (http://localhost:6333)"
+            log_success "Qdrant service is running (http://localhost:6333)"
             break
         fi
         sleep 2
         if [ $i -eq 30 ]; then
-            log_warning "Qdrant 服务启动超时，可能需要更多时间"
+            log_warning "Qdrant service startup timed out, it might need more time."
         fi
     done
     
-    # 检查 MQTT
-    log_info "检查 MQTT 服务..."
+    # Check MQTT
+    log_info "Checking MQTT service..."
     if nc -z localhost 1883 &> /dev/null; then
-        log_success "MQTT 服务正常 (mqtt://localhost:1883)"
+        log_success "MQTT service is running (mqtt://localhost:1883)"
     else
-        log_warning "MQTT 服务可能未完全启动"
+        log_warning "MQTT service may not be fully started yet."
     fi
 }
 
-# 检查并连接远程 FaceEmbed API
+# Check and connect to the remote FaceEmbed API
 check_and_connect_remote_face_api() {
-    log_info "检查远程 FaceEmbed API 连接状态..."
+    log_info "Checking remote FaceEmbed API connection status..."
     
     local api_host="192.168.10.179"
     local api_port="8000"
     local api_url="http://${api_host}:${api_port}/health"
     
-    log_info "尝试连接到: $api_url"
+    log_info "Attempting to connect to: $api_url"
     
-    # 检查网络连通性
+    # Check network connectivity
     if ! ping -c 1 -W 3 "$api_host" &> /dev/null; then
-        log_error "无法 ping 通 Hailo 设备 ($api_host)"
-        log_info "请检查网络连接和设备状态"
+        log_error "Cannot ping Hailo device ($api_host)."
+        log_info "Please check the network connection and device status."
         return 1
     fi
     
-    # 检查API服务状态
+    # Check API service status
     if curl -f --connect-timeout 5 --max-time 10 "$api_url" &> /dev/null; then
-        log_success "✅ FaceEmbed API 连接正常"
+        log_success "✅ FaceEmbed API connection is OK."
         
-        # 获取API详细信息
+        # Get API details
         local api_info
         api_info=$(curl -s "$api_url" 2>/dev/null)
         if [ $? -eq 0 ]; then
-            log_info "API状态: $api_info"
+            log_info "API Status: $api_info"
         fi
         
-        # 测试API功能
-        log_info "测试API基本功能..."
+        # Test API functionality
+        log_info "Testing basic API functionality..."
         if curl -f "$api_url" -H "Accept: application/json" &> /dev/null; then
-            log_success "API功能测试通过"
+            log_success "API functionality test passed."
         fi
         
         return 0
     else
-        log_warning "❌ 无法连接到 FaceEmbed API"
+        log_warning "❌ Could not connect to FaceEmbed API."
         log_info ""
-        log_info "🔧 在 Hailo 设备上启动 FaceEmbed API:"
-        log_info "   ssh harvest@$api_host"
+        log_info "🔧 To start the FaceEmbed API on the Hailo device:"
+        log_info "   ssh user@$api_host"
         log_info "   cd ~/face_embed_api"
         log_info "   source .venv/bin/activate"
         log_info "   python src/face_embed_api/app.py"
         log_info ""
-        log_info "或者使用启动脚本:"
-        log_info "   ssh harvest@$api_host 'cd ~/face_embed_api && python scripts/start_server.py'"
+        log_info "Or use the start script:"
+        log_info "   ssh user@$api_host 'cd ~/face_embed_api && python scripts/start_server.py'"
         log_info ""
-        log_info "验证启动成功:"
+        log_info "To verify it started successfully:"
         log_info "   curl http://$api_host:$api_port/health"
         log_info ""
         
@@ -167,11 +167,11 @@ check_and_connect_remote_face_api() {
     fi
 }
 
-# 初始化 Qdrant 集合
+# Initialize Qdrant collections
 init_qdrant_collections() {
-    log_info "初始化 Qdrant 人脸向量集合..."
+    log_info "Initializing Qdrant face vector collections..."
     
-    # 等待 Qdrant 完全启动
+    # Wait for Qdrant to be fully up
     timeout=60
     while [ $timeout -gt 0 ]; do
         if curl -f http://localhost:6333/health &> /dev/null; then
@@ -182,15 +182,15 @@ init_qdrant_collections() {
     done
     
     if [ $timeout -eq 0 ]; then
-        log_error "Qdrant 启动超时"
+        log_error "Qdrant startup timed out."
         return 1
     fi
     
-    # 创建默认集合
+    # Create default collections
     collections=("default_faces" "office_entrance" "warehouse_door" "lab_access")
     
     for collection in "${collections[@]}"; do
-        log_info "创建集合: $collection"
+        log_info "Creating collection: $collection"
         
         curl -X PUT "http://localhost:6333/collections/$collection" \
             -H "Content-Type: application/json" \
@@ -204,165 +204,165 @@ init_qdrant_collections() {
                     "default_segment_number": 2
                 },
                 "replication_factor": 1
-            }' &> /dev/null || log_info "集合 $collection 可能已存在"
+            }' &> /dev/null || log_info "Collection $collection may already exist."
     done
     
-    log_success "Qdrant 集合初始化完成"
+    log_success "Qdrant collections initialized."
 }
 
-# 启动 Node-RED
+# Start Node-RED
 start_nodered() {
     if [ "$WITH_NODERED" = true ]; then
-        log_info "启动 Node-RED..."
+        log_info "Starting Node-RED..."
         
-        # 确保flows目录存在并复制流程文件
+        # Ensure data directory exists and copy the flow file
         mkdir -p services/node_red/data
         if [ -f services/node_red/face_access_control.json ]; then
             cp services/node_red/face_access_control.json services/node_red/data/
-            log_info "已复制 Node-RED 流程文件"
+            log_info "Copied Node-RED flow file."
         elif [ -f flows/face_access_control.json ]; then
             cp flows/face_access_control.json services/node_red/data/
-            log_info "已复制 Node-RED 流程文件 (从旧路径)"
+            log_info "Copied Node-RED flow file (from legacy path)."
         else
-            log_warning "未找到 Node-RED 流程文件，请手动导入"
+            log_warning "Node-RED flow file not found. Please import it manually."
         fi
         
         $DOCKER_COMPOSE_CMD up -d node-red
         
-        log_info "等待 Node-RED 启动..."
+        log_info "Waiting for Node-RED to start..."
         for i in {1..30}; do
             if curl -f http://localhost:1880 &> /dev/null; then
-                log_success "Node-RED 已启动: http://localhost:1880"
+                log_success "Node-RED is running: http://localhost:1880"
                 break
             fi
             sleep 2
             if [ $i -eq 30 ]; then
-                log_warning "Node-RED 启动超时"
+                log_warning "Node-RED startup timed out."
             fi
         done
     fi
 }
 
-# 显示部署信息
+# Display deployment information
 show_deployment_info() {
-    log_info "简化系统部署信息:"
+    log_info "Simplified System Deployment Information:"
     echo
-    echo "🏗️  系统架构:"
+    echo "🏗️  System Architecture:"
     echo "  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐"
     echo "  │ Grove Vision AI │───→│   MQTT Broker   │───→│    Node-RED     │"
-    echo "  │      V2         │    │   (主服务器)    │    │   (主服务器)    │"
-    echo "  │   (多设备)      │    │                 │    │  ┌─────────────┐ │"
-    echo "  └─────────────────┘    └─────────────────┘    │  │ 配置都在    │ │"
-    echo "                                              │  │ Node-RED中  │ │"
-    echo "                                              │  └─────────────┘ │"
+    echo "  │      V2         │    │   (Main Server) │    │   (Main Server) │"
+    echo "  │   (Multiple)    │    │                 │    │  ┌─────────────┐ │"
+    echo "  └─────────────────┘    └─────────────────┘    │  │ Configuration │ │"
+    echo "                                              │  │ is managed in │ │"
+    echo "                                              │  │ Node-RED      │ │"
     echo "                                              └─────────────────┘"
     echo "                                                         │"
     echo "                                                         ▼ HTTP API"
     echo "  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐"
-    echo "  │  FaceEmbed API  │◀───│     Qdrant      │◀───│ Vector Search   │"
-    echo "  │ ✅ 已验证完成   │    │   (主服务器)    │    │                 │"
+    echo "  │  FaceEmbed API  │◀───│     Qdrant      │◀───│  Vector Search  │"
+    echo "  │ ✅ Verified     │    │   (Main Server) │    │                 │"
     echo "  │  192.168.10.179 │    │                 │    │                 │"
-    echo "  │  3-18ms推理     │    │                 │    │                 │"
+    echo "  │  3-18ms Inference│   │                 │    │                 │"
     echo "  └─────────────────┘    └─────────────────┘    └─────────────────┘"
     echo
     
-    echo "🌐 服务访问地址:"
-    echo "  • Qdrant (向量数据库):    http://localhost:6333/dashboard"
+    echo "🌐 Service URLs:"
+    echo "  • Qdrant (Vector DB):    http://localhost:6333/dashboard"
     echo "  • MQTT Broker:           mqtt://localhost:1883"
     
     if docker ps | grep -q face_access_nodered; then
-        echo "  • Node-RED (流程编排):   http://localhost:1880"
+        echo "  • Node-RED (Flows):   http://localhost:1880"
     fi
     
     echo "  • FaceEmbed API:         http://192.168.10.179:8000/docs"
     echo
 }
 
-# 显示服务状态
+# Display service status
 show_service_status() {
-    echo "📋 Docker 容器状态:"
+    echo "📋 Docker Container Status:"
     docker ps --filter "name=face_access" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
     echo
     
-    echo "🔧 快速操作:"
-    echo "  • 查看日志: docker logs -f [container_name]"
-    echo "  • 停止服务: docker-compose down"
-    echo "  • 重启服务: docker restart [container_name]"
-    echo "  • 检查FaceEmbed API: curl http://192.168.10.179:8000/health"
+    echo "🔧 Quick Actions:"
+    echo "  • View Logs: docker logs -f [container_name]"
+    echo "  • Stop Services: docker-compose down"
+    echo "  • Restart Service: docker restart [container_name]"
+    echo "  • Check FaceEmbed API: curl http://192.168.10.179:8000/health"
     echo
 }
 
-# 显示手动启动说明
+# Display manual startup instructions
 show_manual_instructions() {
-    echo "📝 手动启动服务 (推荐用于调试):"
+    echo "📝 Manual Startup (Recommended for Debugging):"
     echo
-    echo "1. 启动Qdrant:"
+    echo "1. Start Qdrant:"
     echo "   docker run -d --name face_access_qdrant -p 6333:6333 \\"
     echo "     -v \$(pwd)/services/qdrant/storage:/qdrant/storage \\"
     echo "     -e QDRANT__SERVICE__API_KEY=face_access_2025 \\"
     echo "     qdrant/qdrant:v1.9.0"
     echo
-    echo "2. 启动MQTT:"
+    echo "2. Start MQTT:"
     echo "   docker run -d --name face_access_mqtt -p 1883:1883 \\"
     echo "     -v \$(pwd)/services/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf \\"
     echo "     eclipse-mosquitto:2.0"
     echo
-    echo "3. 启动Node-RED:"
+    echo "3. Start Node-RED:"
     echo "   docker run -d --name face_access_nodered -p 1880:1880 \\"
     echo "     -v \$(pwd)/services/node_red:/data -e TZ=Asia/Shanghai \\"
     echo "     nodered/node-red:3.1"
     echo
-    echo "4. 启动FaceEmbed API (在Hailo设备上):"
-    echo "   ssh harvest@192.168.10.179"
+    echo "4. Start FaceEmbed API (on Hailo device):"
+    echo "   ssh user@192.168.10.179"
     echo "   cd ~/face_embed_api"
     echo "   source .venv/bin/activate"
     echo "   python src/face_embed_api/app.py"
     echo ""
-    echo "   或使用便捷脚本:"
+    echo "   Or use the convenience script:"
     echo "   python scripts/start_server.py"
     echo ""
-    echo "   验证服务状态:"
+    echo "   Verify service status:"
     echo "   curl http://192.168.10.179:8000/health"
     echo
-    echo "详细的手动启动指南请查看: docs/manual_startup_guide.md"
+    echo "For a detailed manual startup guide, see: docs/manual_startup_guide.md"
     echo
 }
 
-# 显示配置说明
+# Display configuration info
 show_configuration_info() {
-    echo "⚙️  Node-RED 配置说明:"
+    echo "⚙️  Node-RED Configuration:"
     echo
-    echo "访问 http://localhost:1880 后，在以下节点中修改配置："
+    echo "Access http://localhost:1880 and modify the following nodes:"
     echo
-    echo "• 修改Hailo设备IP (API URL 配置器节点):"
+    echo "• Modify Hailo device IP (in 'API URL Configuration' node):"
     echo "  const faceEmbedHost = '192.168.10.179';"
     echo
-    echo "• 设备Collection映射 (准备向量搜索节点):"
+    echo "• Map devices to collections (in 'Prepare Vector Search' node):"
     echo "  const deviceCollectionMap = {"
     echo "    'grove_vision_ai_v2_001': 'office_entrance',"
     echo "    'grove_vision_ai_v2_002': 'warehouse_door'"
     echo "  };"
     echo
-    echo "• 相似度阈值调整:"
+    echo "• Adjust similarity threshold:"
     echo "  const threshold = 0.32;"
     echo
-    echo "• Qdrant配置:"
+    echo "• Configure Qdrant:"
     echo "  const qdrantHost = 'localhost';"
     echo "  const qdrantPort = '6333';"
     echo
 }
 
-# 主函数
+# Main function
 main() {
     echo "========================================"
-    echo "🎯 人脸识别门禁系统启动脚本 (简化版本)"
+    echo "🎯 Face Recognition Access System Start"
     echo "========================================"
     
-    # 全局变量
+    # Global variables
     WITH_NODERED=false
     MANUAL_MODE=false
     
-    # 检查参数
+    # Parse arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
             --with-nodered)
@@ -374,37 +374,37 @@ main() {
                 shift
                 ;;
             --help|-h)
-                echo "使用方法: $0 [选项]"
+                echo "Usage: $0 [OPTIONS]"
                 echo
-                echo "选项:"
-                echo "  --with-nodered     同时启动 Node-RED 容器"
-                echo "  --manual           仅显示手动启动说明"
-                echo "  --help, -h         显示此帮助信息"
+                echo "Options:"
+                echo "  --with-nodered     Also start the Node-RED container."
+                echo "  --manual           Only display manual startup instructions."
+                echo "  --help, -h         Show this help message."
                 echo
-                echo "简化系统说明:"
-                echo "  • 仅包含 Qdrant、MQTT、Node-RED 三个核心服务"
-                echo "  • 配置都在 Node-RED 中管理，无需环境变量"
-                echo "  • FaceEmbed API 运行在 Hailo 设备 (192.168.10.179)"
-                echo "  • 推荐使用 --manual 查看手动启动方式进行调试"
+                echo "About this simplified system:"
+                echo "  • Includes only Qdrant, MQTT, and Node-RED core services."
+                echo "  • All configuration is managed in Node-RED, no .env files needed."
+                echo "  • The FaceEmbed API runs on a separate Hailo device (192.168.10.179)."
+                echo "  • For debugging, using --manual is recommended."
                 echo
                 exit 0
                 ;;
             *)
-                log_error "未知参数: $1"
-                echo "使用 --help 查看可用选项"
+                log_error "Unknown parameter: $1"
+                echo "Use --help for available options."
                 exit 1
                 ;;
         esac
     done
     
-    # 如果是手动模式，只显示说明
+    # If in manual mode, just show instructions and exit
     if [ "$MANUAL_MODE" = true ]; then
         show_manual_instructions
         show_configuration_info
         exit 0
     fi
     
-    # 执行启动步骤
+    # Execute startup steps
     check_prerequisites
     create_directories
     start_infrastructure
@@ -414,7 +414,7 @@ main() {
         start_nodered
     fi
     
-    # 检查远程 FaceEmbed API 连接
+    # Check remote FaceEmbed API connection
     check_and_connect_remote_face_api
     
     show_deployment_info
@@ -422,9 +422,9 @@ main() {
     show_manual_instructions
     show_configuration_info
     
-    log_success "人脸识别门禁系统 (简化版本) 启动完成！"
-    log_info "建议使用手动启动方式进行调试: ./deployment/start_services.sh --manual"
+    log_success "Face Recognition Access Control System (Simplified Version) startup complete!"
+    log_info "For debugging, it is recommended to use the manual start method: ./deployment/start_services.sh --manual"
 }
 
-# 运行主函数
+# Run main function
 main "$@"

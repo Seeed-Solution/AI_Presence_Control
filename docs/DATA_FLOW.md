@@ -1,110 +1,110 @@
-# 数据流与格式说明 (Data Flow & Format Documentation)
+# Data Flow & Format Documentation
 
-本文档详细说明了人脸识别权限控制系统中各个模块之间的数据流和核心数据格式。所有说明均基于当前代码实现。
+This document details the data flow between modules and the core data formats in the face recognition access control system. All descriptions are based on the current code implementation.
 
-## 目录
-1.  [系统概览](#1-系统概览)
-2.  [核心数据流](#2-核心数据流)
-    *   [2.1 人脸识别流程](#21-人脸识别流程)
-    *   [2.2 人脸入库流程](#22-人脸入库流程)
-3.  [数据格式详解](#3-数据格式详解)
+## Table of Contents
+1.  [System Overview](#1-system-overview)
+2.  [Core Data Flows](#2-core-data-flows)
+    *   [2.1 Face Recognition Flow](#21-face-recognition-flow)
+    *   [2.2 Face Enrollment Flow](#22-face-enrollment-flow)
+3.  [Detailed Data Formats](#3-detailed-data-formats)
     *   [3.1 Grove Vision AI -> MQTT](#31-grove-vision-ai---mqtt)
-    *   [3.2 Node-RED内部: 标准化视觉帧](#32-node-red内部-标准化视觉帧)
+    *   [3.2 Node-RED (Internal): Standardized Vision Frame](#32-node-red-internal-standardized-vision-frame)
     *   [3.3 Node-RED -> FaceEmbed API](#33-node-red---faceembed-api)
     *   [3.4 FaceEmbed API -> Node-RED](#34-faceembed-api---node-red)
-    *   [3.5 Node-RED -> Qdrant (向量搜索)](#35-node-red---qdrant-向量搜索)
-    *   [3.6 Qdrant -> Node-RED (搜索结果)](#36-qdrant---node-red-搜索结果)
-    *   [3.7 Node-RED -> MQTT (访问决策)](#37-node-red---mqtt-访问决策)
-    *   [3.8 MQTT -> Node-RED (人脸入库)](#38-mqtt---node-red-人脸入库)
-    *   [3.9 Node-RED -> Qdrant (入库)](#39-node-red---qdrant-入库)
-    *   [3.10 Node-RED -> MQTT (入库状态)](#310-node-red---mqtt-入库状态)
+    *   [3.5 Node-RED -> Qdrant (Vector Search)](#35-node-red---qdrant-vector-search)
+    *   [3.6 Qdrant -> Node-RED (Search Results)](#36-qdrant---node-red-search-results)
+    *   [3.7 Node-RED -> MQTT (Access Decision)](#37-node-red---mqtt-access-decision)
+    *   [3.8 MQTT -> Node-RED (Face Enrollment)](#38-mqtt---node-red-face-enrollment)
+    *   [3.9 Node-RED -> Qdrant (Enrollment)](#39-node-red---qdrant-enrollment)
+    *   [3.10 Node-RED -> MQTT (Enrollment Status)](#310-node-red---mqtt-enrollment-status)
 
 ---
 
-## 1. 系统概览
+## 1. System Overview
 
-系统的数据核心是**Node-RED**, 它负责编排所有服务：
--   从 **Grove Vision AI** (通过MQTT) 接收图像和检测框。
--   调用 **FaceEmbed API** (HTTP) 将人脸图像转换为向量。
--   在 **Qdrant** 向量数据库 (HTTP) 中搜索匹配的向量。
--   将最终的访问决策发布到 **MQTT**。
--   处理人脸入库请求，并将新的人脸向量存入 **Qdrant**。
+The data core of the system is **Node-RED**, which orchestrates all services:
+-   Receives images and detection boxes from **Grove Vision AI** (via MQTT).
+-   Calls the **FaceEmbed API** (HTTP) to convert face images into vectors.
+-   Searches for matching vectors in the **Qdrant** vector database (HTTP).
+-   Publishes the final access decision to **MQTT**.
+-   Handles face enrollment requests and stores new face vectors in **Qdrant**.
 
 ```mermaid
 graph TD
-    subgraph 主服务器
+    subgraph Main Server
         A[MQTT Broker]
         B(Node-RED)
         C[Qdrant DB]
     end
 
-    subgraph 边缘设备
+    subgraph Edge Devices
         G((Grove Vision AI))
         H((Hailo-8/RPi5))
     end
 
-    subgraph 服务
+    subgraph Services
         I[FaceEmbed API]
     end
 
-    G -- 原始图像/检测框 (MQTT) --> A
+    G -- Raw Image/Detections (MQTT) --> A
     A -- vision/frames/... --> B
-    B -- 人脸图像+BBox (HTTP) --> I
-    I -- 512维向量 --> B
-    B -- 向量 (HTTP) --> C
-    C -- 搜索结果 --> B
-    B -- 访问决策 (MQTT) --> A
-    A -- access/result/... --> Z(其他订阅者)
+    B -- Face Image (HTTP) --> I
+    I -- 512-dim Vector --> B
+    B -- Vector (HTTP) --> C
+    C -- Search Result --> B
+    B -- Access Decision (MQTT) --> A
+    A -- access/result/... --> Z(Other Subscribers)
 
-    H -- 运行 --> I
+    H -- Runs --> I
 
     style B fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-## 2. 核心数据流
+## 2. Core Data Flows
 
-### 2.1 人脸识别流程
+### 2.1 Face Recognition Flow
 
-1.  **Grove Vision AI** 检测到人脸，将图像数据和检测框数据分别发送到 MQTT Broker。
-2.  **Node-RED** 中的 `Grove数据整合器` 节点监听相应MQTT主题，将图像和检测框组合成一个标准化的JSON对象。
-3.  `处理视觉帧` 节点从一帧中的多个人脸里选择面积最大的一个。
-4.  `API URL 配置器` 节点准备好请求，并调用 `FaceEmbed API` 的 `/embed` 接口。
-5.  **FaceEmbed API** 返回人脸的512维向量。
-6.  `准备向量搜索` 节点构建Qdrant的搜索请求。
-7.  `Qdrant搜索` 节点调用Qdrant的搜索接口。
-8.  `访问决策` 节点根据Qdrant返回的结果，判断是否匹配成功，并生成最终的决策消息。
-9.  `发布访问结果` 节点将决策消息发布到MQTT的 `access/result/{device_id}` 主题。
+1.  **Grove Vision AI** detects a face and sends the image data and detection box data to the MQTT Broker separately.
+2.  The `Grove Data Integrator` node in **Node-RED** listens to the corresponding MQTT topics and combines the image and detection boxes into a single standardized JSON object.
+3.  The `Process Vision Frame` node selects the largest face from multiple faces in a single frame.
+4.  The `API URL Configurator` node prepares the request and calls the `FaceEmbed API`'s `/detect_and_embed` endpoint.
+5.  **FaceEmbed API** returns a 512-dimensional vector of the face.
+6.  The `Prepare Vector Search` node constructs the search request for Qdrant.
+7.  The `Qdrant Search` node calls Qdrant's search endpoint.
+8.  The `Access Decision` node determines if there is a successful match based on the result from Qdrant and generates the final decision message.
+9.  The `Publish Access Result` node publishes the decision message to the `access/result/{device_id}` MQTT topic.
 
-### 2.2 人脸入库流程
+### 2.2 Face Enrollment Flow
 
-1.  外部系统 (如管理后台) 向MQTT主题 `access/enroll/{device_id}` 发布一条入库指令。
-2.  **Node-RED** 的 `处理入库请求` 节点接收指令，并设置一个"收集中"的状态。
-3.  当该 `device_id` 的摄像头捕捉到人脸时，`处理视觉帧` 节点会将其路由到入库流程。
-4.  `FaceEmbed API` 被调用以提取人脸向量。
-5.  `收集/平均/存储向量` 节点会收集10个向量，计算它们的平均值，以生成一个更具代表性的向量。
-6.  该节点准备Qdrant的"创建集合"(如果不存在)和"插入点"的请求。
-7.  请求被发送到**Qdrant**，完成向量的存储。
-8.  `入库最终状态` 节点将成功或失败的消息发布到MQTT的 `access/enroll_status/{device_id}` 主题。
+1.  An external system (e.g., an admin panel) publishes an enrollment command to the MQTT topic `access/enroll/{device_id}`.
+2.  **Node-RED**'s `Process Enrollment Request` node receives the command and sets a "collecting" status.
+3.  When a face is captured by the camera with that `device_id`, the `Process Vision Frame` node routes it to the enrollment flow.
+4.  The `FaceEmbed API` is called to extract the face vector.
+5.  The `Collect/Average/Store Vector` node collects 10 vectors and calculates their average to generate a more representative vector.
+6.  This node prepares requests for Qdrant to "create collection" (if it doesn't exist) and "upsert point".
+7.  The request is sent to **Qdrant**, completing the vector storage.
+8.  The `Enrollment Final Status` node publishes a success or failure message to the `access/enroll_status/{device_id}` MQTT topic.
 
-## 3. 数据格式详解
+## 3. Detailed Data Formats
 
 ### 3.1 Grove Vision AI -> MQTT
 
-Grove Vision AI的节点 (`subflow:f54138caa1c8a1ae`) 被设计为分别输出原始图像和检测结果。Node-RED中的 `Grove数据整合器` 节点负责将它们合并。
+The Grove Vision AI nodes (`subflow:f54138caa1c8a1ae`) are designed to output the raw image and detection results separately. The `Grove Data Integrator` node in Node-RED is responsible for merging them.
 
--   **原始图像**: `msg.payload` 是一个Buffer对象。
--   **检测结果**: `msg.payload` 是一个数组，每个元素代表一个检测框。
+-   **Raw Image**: `msg.payload` is a Buffer object.
+-   **Detection Result**: `msg.payload` is an array where each element represents a detection box.
     ```json
-    // Grove Vision AI BBox 格式
+    // Grove Vision AI BBox Format
     [
       [x_center, y_center, width, height, confidence, class_id],
       [118,      150,      237,    175,    100,        0       ]
     ]
     ```
 
-### 3.2 Node-RED内部: 标准化视觉帧
+### 3.2 Node-RED (Internal): Standardized Vision Frame
 
-`Grove数据整合器` 节点将上述数据源组合成一个统一的JSON对象，作为后续处理的基础。
+The `Grove Data Integrator` node combines the above data sources into a unified JSON object, which serves as the basis for subsequent processing.
 
 -   **Topic**: `vision/frames/{device_id}`
 -   **Payload**:
@@ -114,77 +114,76 @@ Grove Vision AI的节点 (`subflow:f54138caa1c8a1ae`) 被设计为分别输出�
       "img_b64": "base64_image_data...", // string or buffer
       "bboxes": [
         {
-          "x": 1,     // BBox左上角X坐标 (integer)
-          "y": 64,    // BBox左上角Y坐标 (integer)
-          "w": 237,   // BBox宽度 (integer)
-          "h": 175,   // BBox高度 (integer)
-          "score": 1.0  // 置信度 (float, 0.0-1.0)
+          "x": 1,     // BBox top-left X coordinate (integer)
+          "y": 64,    // BBox top-left Y coordinate (integer)
+          "w": 237,   // BBox width (integer)
+          "h": 175,   // BBox height (integer)
+          "score": 1.0  // Confidence score (float, 0.0-1.0)
         }
       ]
     }
     ```
-    *注：`Grove数据整合器` 节点会将中心点坐标格式的bbox转换为左上角坐标格式。*
+    *Note: The `Grove Data Integrator` node converts the center-point bbox format to the top-left corner format.*
 
 ### 3.3 Node-RED -> FaceEmbed API
 
-`处理视觉帧` 节点选择最大的人脸，并准备请求体。
+The `Process Vision Frame` node selects the largest face and prepares the request body. **Note:** While the API supports providing a `bbox`, the standard flow now uses the `/detect_and_embed` endpoint which performs detection internally.
 
--   **Endpoint**: `POST /embed`
+-   **Endpoint**: `POST /detect_and_embed`
 -   **Request Body**:
     ```json
     {
-      "image_base64": "base64_encoded_image",
-      "bbox": {
-        "x": 100,
-        "y": 100,
-        "w": 200,
-        "h": 200
-      }
+      "image_base64": "base64_encoded_image"
     }
     ```
 
 ### 3.4 FaceEmbed API -> Node-RED
 
-`FaceEmbed API` 返回提取的向量和处理信息。
+The `FaceEmbed API` returns the extracted vector and processing information.
 
 -   **Response Body**:
     ```json
-    {
-      "vector": [0.0123, -0.0456, ...], // 512维人脸向量 (Array<float>)
-      "processing_time_ms": 25,       // 处理耗时 (integer)
-      "confidence": 0.88              // 人脸质量评估分数 (float)
-    }
+    // Note: The API returns an array of results. 
+    // The Node-RED flow processes the first element.
+    [
+      {
+        "bbox": [100, 100, 200, 200],
+        "landmarks": [ ... ],
+        "embedding": [0.0123, -0.0456, ...], // 512-dim face vector (Array<float>)
+        "confidence": 0.99 // Detection confidence
+      }
+    ]
     ```
 
-### 3.5 Node-RED -> Qdrant (向量搜索)
+### 3.5 Node-RED -> Qdrant (Vector Search)
 
-`准备向量搜索` 节点构建请求以在Qdrant中查找相似向量。
+The `Prepare Vector Search` node constructs a request to find similar vectors in Qdrant.
 
 -   **Endpoint**: `POST /collections/{collectionName}/points/search`
 -   **Request Body**:
     ```json
     {
-      "vector": [0.0123, -0.0456, ...], // 从FaceEmbed API获取的向量
-      "limit": 3,                       // 返回最相似的3个结果
-      "with_payload": true,             // 返回存储的payload
-      "score_threshold": 0.68           // 相似度阈值 (1 - 距离阈值)
+      "vector": [0.0123, -0.0456, ...], // Vector from FaceEmbed API
+      "limit": 3,                       // Return the top 3 most similar results
+      "with_payload": true,             // Return the stored payload
+      "score_threshold": 0.68           // Similarity threshold (1 - distance threshold)
     }
     ```
 
-### 3.6 Qdrant -> Node-RED (搜索结果)
+### 3.6 Qdrant -> Node-RED (Search Results)
 
-Qdrant返回一个包含匹配点的数组。
+Qdrant returns an array of matching points.
 
 -   **Response Body**:
     ```json
     {
       "result": [
         {
-          "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef", // 匹配点的UUID
+          "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef", // UUID of the matching point
           "version": 1,
-          "score": 0.75, // 余弦相似度 (越高越相似)
+          "score": 0.75, // Cosine similarity (higher is more similar)
           "payload": {
-            "name": "张三" // 入库时存储的人员姓名
+            "name": "John Doe" // Name of the person stored during enrollment
           }
         }
       ],
@@ -193,9 +192,9 @@ Qdrant返回一个包含匹配点的数组。
     }
     ```
 
-### 3.7 Node-RED -> MQTT (访问决策)
+### 3.7 Node-RED -> MQTT (Access Decision)
 
-`访问决策` 节点整合所有信息，生成最终结果。
+The `Access Decision` node integrates all information to generate the final result.
 
 -   **Topic**: `access/result/{device_id}`
 -   **Payload**:
@@ -203,37 +202,37 @@ Qdrant返回一个包含匹配点的数组。
     {
       "ts": "2025-06-05T16:30:00Z",
       "device_id": "grove_vision_ai_v2_001",
-      "decision": true,                   // 访问是否允许 (boolean)
-      "name": "张三",                      // 匹配到的人员姓名 (string | null)
-      "distance": 0.25,                   // 向量距离 (1 - score) (float)
-      "confidence": 0.88,                 // 人脸质量分 (float)
-      "processing_time_ms": 280,          // 端到端处理总耗时 (integer)
-      "matched_id": "a1b2c3d4-..."        // 匹配到的Qdrant点ID (string | null)
+      "decision": true,                   // Access granted (boolean)
+      "name": "John Doe",                  // Name of the matched person (string | null)
+      "distance": 0.25,                   // Vector distance (1 - score) (float)
+      "confidence": 0.99,                 // Face detection confidence (float)
+      "processing_time_ms": 280,          // End-to-end total processing time (integer)
+      "matched_id": "a1b2c3d4-..."        // Matched Qdrant point ID (string | null)
     }
     ```
 
-### 3.8 MQTT -> Node-RED (人脸入库)
+### 3.8 MQTT -> Node-RED (Face Enrollment)
 
-通过向MQTT发送消息来启动人脸入库流程。
+The face enrollment process is initiated by sending a message to MQTT.
 
 -   **Topic**: `access/enroll/{device_id}`
 -   **Payload**:
     ```json
     {
-      "name": "李四",                          // 要入库的人员姓名 (string)
-      "action": "start",                      // 操作指令 (string)
-      "collection": "office_entrance"         // 要存入的Qdrant集合 (string)
+      "name": "Jane Smith",                  // Name of the person to enroll (string)
+      "action": "start",                      // Action command (string)
+      "collection": "office_entrance"         // Qdrant collection to save to (string)
     }
     ```
 
-### 3.9 Node-RED -> Qdrant (入库)
+### 3.9 Node-RED -> Qdrant (Enrollment)
 
-`收集/平均/存储向量` 和 `准备Qdrant入库` 节点协同工作，将平均后的向量存入Qdrant。
+The `Collect/Average/Store Vector` and `Prepare Qdrant Upsert` nodes work together to store the averaged vector in Qdrant.
 
-1.  **创建Collection (如果不存在)**
+1.  **Create Collection (if it doesn't exist)**
     -   **Endpoint**: `PUT /collections/{collectionName}`
     -   **Body**: `{"vectors": {"size": 512, "distance": "Cosine"}}`
-2.  **插入/更新点 (Upsert Point)**
+2.  **Upsert Point**
     -   **Endpoint**: `PUT /collections/{collectionName}/points?wait=true`
     -   **Body**:
         ```json
@@ -241,38 +240,38 @@ Qdrant返回一个包含匹配点的数组。
           "points": [
             {
               "id": "generated-uuid-...",
-              "vector": "[...]", // 平均后的512维向量
-              "payload": { "name": "李四" }
+              "vector": "[...]", // Averaged 512-dim vector
+              "payload": { "name": "Jane Smith" }
             }
           ]
         }
         ```
 
-### 3.10 Node-RED -> MQTT (入库状态)
+### 3.10 Node-RED -> MQTT (Enrollment Status)
 
-在入库流程的各个阶段，Node-RED会发布状态更新。
+Node-RED publishes status updates at various stages of the enrollment process.
 
 -   **Topic**: `access/enroll_status/{device_id}`
--   **Payload (收集中)**:
+-   **Payload (Collecting)**:
     ```json
     {
       "status": "collecting",
-      "message": "正在收集人脸数据... (3/10)",
+      "message": "Collecting face data... (3/10)",
       "collected": 3,
       "needed": 10
     }
     ```
--   **Payload (处理中)**:
+-   **Payload (Processing)**:
     ```json
     {
       "status": "saving",
-      "message": "数据收集完成，正在创建集合并存入数据库..."
+      "message": "Data collection complete, creating collection and saving to database..."
     }
     ```
--   **Payload (最终结果)**:
+-   **Payload (Final Result)**:
     ```json
     {
       "status": "success", // or "error"
-      "message": "用户 李四 人脸入库成功!"
+      "message": "User Jane Smith enrolled successfully!"
     }
     ``` 

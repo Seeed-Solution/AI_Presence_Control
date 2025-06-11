@@ -1,152 +1,152 @@
-# 人脸识别门禁控制Node-RED项目
+# Face Recognition Access Control Node-RED Project
 
-## 1. 项目概述
+## 1. Project Overview
 
-本项目是一个基于Node-RED实现的完整人脸识别门禁控制系统。它被设计为一个高度集成和可配置的中心枢纽，负责处理来自边缘视觉设备（如Grove Vision AI V2）的数据流，调用远程AI服务进行人脸特征提取，与向量数据库（Qdrant）进行比对，并最终做出访问决策。
+This project is a complete face recognition access control system implemented in Node-RED. It is designed as a highly integrated and configurable central hub, responsible for processing data streams from edge vision devices (like the Grove Vision AI V2), invoking remote AI services for face feature extraction, comparing them against a vector database (Qdrant), and making final access decisions.
 
-该流程支持实时人脸识别和手动人脸入库两大核心功能，并通过MQTT协议与其他系统组件进行通信和状态监控。
-
----
-
-## 2. 核心功能
-
-- **实时人脸识别**：处理来自摄像头的视频帧，识别人脸并与数据库比对，做出"允许"或"拒绝"的访问决策。
-- **动态人脸入库**：通过手动触发，采集指定用户的多帧人脸图像，计算平均特征向量后存入指定的数据库（Collection）。
-- **边缘设备集成**：专为**Grove Vision AI V2**优化，能正确解析其独特的中心点坐标BBox格式。
-- **远程AI服务调用**：通过HTTP请求调用外部署的**FaceEmbed API**，将人脸图像转换为512维特征向量。
-- **向量数据库集成**：与**Qdrant**深度集成，用于存储和高速检索人脸向量。
-- **系统状态监控**：通过MQTT**心跳机制**，定期发布系统健康状况和关键配置信息，便于远程监控和调试。
-- **灵活配置**：所有关键参数（IP地址、设备映射、相似度阈值、数据库名称）均在Node-RED节点内部配置，无需修改环境变量。
+The flow supports two core functions: real-time face recognition and manual face enrollment. It uses the MQTT protocol for communication and status monitoring with other system components.
 
 ---
 
-## 3. 流程架构
+## 2. Core Features
 
-系统主要包含两条并行的逻辑流：**识别流**和**入库流**。
+- **Real-time Face Recognition**: Processes video frames from a camera, recognizes faces, compares them with a database, and makes "allow" or "deny" access decisions.
+- **Dynamic Face Enrollment**: Manually triggered process to collect multiple frames of a specified user's face, calculate an average feature vector, and store it in a designated database (Collection).
+- **Edge Device Integration**: Optimized for the **Grove Vision AI V2**, correctly parsing its unique center-point coordinate BBox format.
+- **Remote AI Service Invocation**: Calls the externally deployed **FaceEmbed API** via HTTP request to convert face images into 512-dimension feature vectors.
+- **Vector Database Integration**: Deeply integrated with **Qdrant** for storing and rapidly retrieving face vectors.
+- **System Status Monitoring**: Uses an MQTT **heartbeat mechanism** to periodically publish system health and key configuration information for remote monitoring and debugging.
+- **Flexible Configuration**: All key parameters (IP addresses, device mappings, similarity thresholds, database names) are configured within Node-RED nodes, without needing to modify environment variables.
 
-### 识别流程
+---
+
+## 3. Flow Architecture
+
+The system primarily consists of two parallel logical flows: the **Recognition Flow** and the **Enrollment Flow**.
+
+### Recognition Flow
 ```
-Grove Vision AI V2 → [处理视觉帧] → [FaceEmbed API] → [准备向量搜索] → [Qdrant搜索] → [访问决策] → 发布结果 (MQTT)
+Grove Vision AI V2 → [Process Vision Frame] → [FaceEmbed API] → [Prepare Vector Search] → [Qdrant Search] → [Make Access Decision] → Publish Result (MQTT)
 ```
 
-### 入库流程
+### Enrollment Flow
 ```
-手动触发 (Inject) → [处理视觉帧] → [FaceEmbed API] → [收集/平均/存储向量] → [Qdrant入库] → 发布状态 (MQTT)
+Manual Trigger (Inject) → [Process Vision Frame] → [FaceEmbed API] → [Collect/Average/Store Vector] → [Qdrant Upsert] → Publish Status (MQTT)
 ```
 
 ---
 
-## 4. 关键节点详解
+## 4. Key Node Explanations
 
 ### `[Grove Vision AI V2]` (Subflow)
-- **作用**：作为视频和人脸检测数据的来源。
-- **输出**：
-    - **输出1 (图像)**：原始图像数据。
-    - **输出2 (检测结果)**：人脸边界框数组。
-- **注意**：本项目保持此Subflow内部不变，所有适配均在外部完成。
+- **Purpose**: Acts as the source for video and face detection data.
+- **Outputs**:
+    - **Output 1 (Image)**: Raw image data.
+    - **Output 2 (Detection Results)**: An array of face bounding boxes.
+- **Note**: This project keeps the subflow's internals unchanged; all adaptations are handled externally.
 
-### `[Grove数据整合器]` (Function)
-- **作用**：项目的核心适配器，将Grove的两个输出整合成标准数据格式。
-- **核心逻辑**：
-    1.  接收并暂存图像数据。
-    2.  接收检测结果，并匹配对应的图像。
-    3.  **正确处理Grove的 `[中心点x, 中心点y, 宽, 高]` BBox格式**，将其转换为标准的左上角坐标格式。
-    4.  输出一个包含图像和标准BBox的统一消息。
+### `[Grove Data Combiner]` (Function)
+- **Purpose**: The project's core adapter, which merges the two outputs from the Grove device into a standard data format.
+- **Core Logic**:
+    1.  Receives and temporarily stores image data.
+    2.  Receives detection results and matches them with the corresponding image.
+    3.  **Correctly handles the Grove's `[center_x, center_y, width, height]` BBox format**, converting it to the standard top-left corner format.
+    4.  Outputs a unified message containing the image and the standardized BBox.
 
-### `[处理视觉帧]` (Function)
-- **作用**：数据流的**主路由器**。
-- **核心逻辑**：检查系统当前是否处于"入库模式"。
-    - **否 (常规识别)**：将消息从**输出1**发送到识别流程。
-    - **是 (人脸入库)**：将消息从**输出2**发送到入库流程。
+### `[Process Vision Frame]` (Function)
+- **Purpose**: The data flow's **main router**.
+- **Core Logic**: Checks if the system is currently in "enrollment mode".
+    - **No (Normal Recognition)**: Sends the message from **Output 1** to the recognition flow.
+    - **Yes (Face Enrollment)**: Sends the message from **Output 2** to the enrollment flow.
 
-### `[收集/平均/存储向量]` (Function)
-- **作用**：人脸入库的**核心处理器**。
-- **核心逻辑**：
-    1.  **收集**10帧人脸图像转换后的向量。
-    2.  **计算**这10个向量的**平均值**，生成一个更稳定的人脸模板。
-    3.  **准备**Qdrant的入库请求，包含平均向量和用户名。
-    4.  在过程中通过MQTT**实时更新**入库进度。
+### `[Collect/Average/Store Vector]` (Function)
+- **Purpose**: The **core processor** for face enrollment.
+- **Core Logic**:
+    1.  **Collects** vectors from 10 face images.
+    2.  **Calculates** the **average** of these 10 vectors to generate a more stable face template.
+    3.  **Prepares** the Qdrant upsert request, including the average vector and the user's name.
+    4.  **Updates** the enrollment progress in real-time via MQTT.
 
 ---
 
-## 5. 安装与配置
+## 5. Installation and Configuration
 
-### 依赖项
-在启动此Node-RED流程前，请确保以下外部服务已正常运行：
-- **MQTT Broker**：用于消息通信。
-- **Qdrant 数据库**：用于存储和搜索向量。
-- **FaceEmbed API**：部署在AI加速设备（如Hailo）上的人脸特征提取服务。
+### Dependencies
+Before starting this Node-RED flow, ensure the following external services are running:
+- **MQTT Broker**: For message communication.
+- **Qdrant Database**: For storing and searching vectors.
+- **FaceEmbed API**: The face feature extraction service deployed on an AI accelerator device (e.g., Hailo).
 
-### 导入流程
-1.  复制`face_access_control.json`文件的全部内容。
-2.  在Node-RED界面中，点击右上角菜单 > `Import`。
-3.  将JSON内容粘贴到输入框中，并点击`Import`。
+### Importing the Flow
+1.  Copy the entire content of the `face_access_control.json` file.
+2.  In the Node-RED interface, click the top-right menu > `Import`.
+3.  Paste the JSON content into the input box and click `Import`.
 
-### 参数配置 (已极大简化)
-所有关键参数现已统一在 `[全局配置 (Global Config)]` 节点中进行设置。此节点会在Node-RED启动时自动运行一次，将配置加载到Flow上下文中。
+### Parameter Configuration (Greatly Simplified)
+All key parameters are now set in the `[Global Config (Load on Start)]` node. This node runs automatically once when Node-RED starts, loading the configuration into the Flow context.
 
-**您只需修改这一个节点，即可调整整个系统的行为。**
+**You only need to modify this single node to adjust the entire system's behavior.**
 
-1.  **找到 `[全局配置 (Global Config)]` 节点**，它位于流程的左上角。
-2.  **双击打开**并编辑其代码，即可配置以下所有参数：
-    - **Qdrant向量数据库地址**:
+1.  **Find the `[Global Config (Load on Start)]` node** in the top-left corner of the flow.
+2.  **Double-click to open it** and edit its code to configure the following parameters:
+    - **Qdrant Vector Database Address**:
       - `flow.set('qdrant_host', 'localhost');`
       - `flow.set('qdrant_port', '6333');`
       - `flow.set('qdrant_api_key', 'face_access_2025');`
-    - **Hailo人脸嵌入API地址**:
+    - **Hailo Face Embedding API Address**:
       - `flow.set('hailo_host', '192.168.10.179');`
       - `flow.set('hailo_port', '8000');`
-    - **摄像头图像尺寸**:
+    - **Camera Image Dimensions**:
       - `flow.set('image_width', 480);`
       - `flow.set('image_height', 480);`
 
 ---
 
-## 6. 使用指南
+## 6. Usage Guide
 
-### 启动/停止摄像头
-- 点击`Start` Inject节点，启动Grove Vision AI V2的数据流。
-- 点击`Stop` Inject节点，停止数据流。
+### Start/Stop the Camera
+- Click the `Start` Inject node to begin the data stream from the Grove Vision AI V2.
+- Click the `Stop` Inject node to halt the data stream.
 
-### 人脸入库
-1.  找到`[手动人脸入库 (张三)]` Inject节点。
-2.  **编辑节点**，修改Payload中的JSON数据：
-    - `name`: 要入库的用户名。
-    - `collection`: 要存入的Qdrant数据库名称（例如 "office_entrance" 或 "warehouse_door"）。
+### Face Enrollment
+1.  Find the `[Face Enroll]` Inject node.
+2.  **Edit the node** and modify the JSON data in the Payload:
+    - `name`: The name of the user to enroll.
+    - `collection`: The name of the Qdrant collection to store the face in (e.g., "office_entrance" or "warehouse_door").
     ```json
     {
-      "name": "李四",
+      "name": "Jane Smith",
       "action": "start",
       "collection": "warehouse_door"
     }
     ```
-3.  部署后，点击此节点左侧的按钮即可**一键启动**入库流程。
-4.  你可以通过MQTT客户端订阅`access/enroll_status/+`主题来查看实时进度。
+3.  After deploying, click the button to the left of this node to **start the enrollment process with one click**.
+4.  You can monitor the real-time progress by subscribing to the `access/enroll_status/+` topic with an MQTT client.
 
-### 监控识别结果
-- 订阅MQTT主题 `access/result/+` 来实时查看门禁识别结果。
-
----
-
-## 7. MQTT API参考
-
-- `access/result/{device_id}` (输出)
-  - **内容**：JSON格式的访问决策结果，包含识别到的姓名、距离、时间戳等。
-- `access/enroll_status/{device_id}` (输出)
-  - **内容**：JSON格式的人脸入库状态，包含进度、成功或失败信息。
-- `system/heartbeat` (输出)
-  - **内容**：JSON格式的系统心跳信息，每60秒发布一次，包含系统状态和关键配置。
+### Monitoring Recognition Results
+- Subscribe to the MQTT topic `access/result/+` to see real-time access control results.
 
 ---
 
-## 8. 故障排查
+## 7. MQTT API Reference
 
-- **收不到识别结果**：
-  1.  检查`Start`节点是否已触发。
-  2.  查看Node-RED的debug侧边栏，检查`[Grove数据整合器]`是否有数据输出。
-  3.  确认FaceEmbed API和Qdrant服务是否可访问。
-- **人脸入库失败**：
-  1.  检查`手动人脸入库`Inject节点中的`collection`名称是否正确。
-  2.  确认摄像头前有人脸，并且光照良好。
-- **"No image data found" 警告**：
-  - 通常是图像和检测结果消息的时序问题，系统会自动忽略掉匹配不上的数据，少量出现是正常的。如果持续出现，请检查Grove设备的网络连接。 
+- `access/result/{device_id}` (Output)
+  - **Payload**: A JSON object with the access decision result, including the recognized name, distance score, timestamp, etc.
+- `access/enroll_status/{device_id}` (Output)
+  - **Payload**: A JSON object with the face enrollment status, including progress, success, or failure information.
+- `system/heartbeat` (Output)
+  - **Payload**: A JSON object with system heartbeat information, published every 60 seconds, containing system status and key configurations.
+
+---
+
+## 8. Troubleshooting
+
+- **Not receiving recognition results**:
+  1.  Check if the `Start` node has been triggered.
+  2.  Look at the Node-RED debug sidebar to see if the `[Grove Data Combiner]` is outputting data.
+  3.  Confirm that the FaceEmbed API and Qdrant services are accessible.
+- **Face enrollment fails**:
+  1.  Check if the `collection` name in the `Face Enroll` Inject node is correct.
+  2.  Ensure there is a face in front of the camera with good lighting.
+- **"No image data found" warning**:
+  - This is usually a timing issue between the image and detection result messages. The system will automatically ignore mismatched data, so occasional warnings are normal. If they persist, check the Grove device's network connection. 

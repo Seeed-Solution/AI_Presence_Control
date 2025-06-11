@@ -1,81 +1,81 @@
-# 文件结构更新说明
+# File Structure Update Note
 
-## 📁 Node-RED 流程文件移动 (2025-06-06)
+## 📁 Node-RED Flow File Relocation (2025-06-06)
 
-### 变更说明
-为了更好地组织项目结构，将 Node-RED 流程文件从根目录移动到对应的服务目录下。
+### Change Description
+To better organize the project structure, the Node-RED flow file was moved from the root directory to its corresponding service directory.
 
-### 文件移动
+### File Move
 ```bash
-# 移动前
+# Before
 flows/face_access_control.json
 
-# 移动后  
+# After
 services/node_red/face_access_control.json
 ```
 
-### 更新的文件
+### Updated Files
 
 #### 1. `deployment/start_services.sh`
-- **更新**: `start_nodered()` 函数中的流程文件复制逻辑
-- **变更**: 优先从 `services/node_red/` 查找流程文件，向后兼容旧路径
-- **新增**: 文件查找失败时的警告信息
+- **Update**: Flow file copy logic in the `start_nodered()` function.
+- **Change**: Prioritizes finding the flow file in `services/node_red/`, with backward compatibility for the old path.
+- **Added**: A warning message if the file cannot be found.
 
-#### 2. `docker-compose.yml`  
-- **移除**: `./flows:/data/flows` 卷挂载
-- **保留**: `./services/node_red/data:/data` 核心数据挂载
-- **简化**: Node-RED 配置更加清晰
+#### 2. `docker-compose.yml`
+- **Removed**: The `./flows:/data/flows` volume mount.
+- **Kept**: The `./services/node_red/data:/data` core data mount.
+- **Simplified**: Node-RED configuration is now cleaner.
 
 #### 3. `README.md`
-- **更新**: 项目结构说明
-- **变更**: 反映新的文件组织方式
+- **Update**: Project structure description.
+- **Change**: Reflects the new file organization.
 
-#### 4. `doc/process/todo.md`
-- **更新**: Node-RED 流程目录引用
-- **变更**: `flows/` → `services/node_red/`
+#### 4. `docs/todo.md` (Previously `prompt/todo.md`)
+- **Update**: Reference to the Node-RED flow directory.
+- **Change**: `flows/` → `services/node_red/`.
 
 #### 5. `docs/deployment_guide.md`
-- **更新**: 流程文件导入说明
-- **更新**: 备份脚本中的路径引用
+- **Update**: Instructions for importing the flow file.
+- **Update**: Path references in the backup script section.
 
-### 新的目录结构
+### New Directory Structure
 ```
 services/node_red/
-├── data/                           # Node-RED 运行时数据 (Docker 挂载)
-└── face_access_control.json       # 人脸识别流程配置文件
+├── data/                           # Node-RED runtime data (Docker volume)
+└── face_access_control.json       # Face recognition flow configuration file
 ```
 
-### 部署影响
-- ✅ **向后兼容**: 启动脚本会检查新旧两个位置
-- ✅ **无需手动操作**: 启动脚本自动处理文件复制
-- ✅ **Docker 配置简化**: 减少了一个卷挂载
+### Deployment Impact
+- ✅ **Backward Compatible**: The startup script checks both old and new locations.
+- ✅ **No Manual Action Required**: The startup script handles file copying automatically.
+- ✅ **Docker Config Simplified**: Reduced one volume mount.
 
-### 优势
-1. **结构清晰**: 每个服务的配置文件都在对应目录下
-2. **便于维护**: Node-RED 相关文件统一管理
-3. **减少混乱**: 避免根目录文件过多
-4. **Docker 优化**: 简化容器配置
+### Advantages
+1. **Clear Structure**: Each service's configuration files are in its own directory.
+2. **Easier Maintenance**: All Node-RED related files are managed together.
+3. **Reduced Clutter**: Fewer files in the root directory.
+4. **Docker Optimization**: Simplified container configuration.
 
-### 使用说明
+### Usage Instructions
 ```bash
-# 启动服务时，脚本会自动复制流程文件
+# The script will automatically copy the flow file when starting services
 ./deployment/start_services.sh --with-nodered
 
-# 手动导入流程文件 (如果需要)
+# Manually copy the flow file (if needed)
 cp services/node_red/face_access_control.json services/node_red/data/
 
-# 在 Node-RED 中导入
-# 访问 http://localhost:1880
-# 使用导入功能加载流程文件
+# Import in Node-RED
+# Visit http://localhost:1880
+# Use the import function to load the flow file
 ```
 
-### 注意事项
-- 旧的 `flows/` 目录可以安全删除
-- 如果有自定义的流程文件，请移动到新位置
-- 启动脚本会处理路径兼容性，无需担心
+### Notes
+- The old `flows/` directory can be safely deleted.
+- If you have custom flow files, please move them to the new location.
+- The startup script handles path compatibility, so no changes are needed for that.
 
 ---
 
-**更新时间**: 2025-06-06  
-**影响范围**: 部署配置和文档  
-**兼容性**: 完全向后兼容 
+**Last Updated**: 2025-06-06
+**Scope**: Deployment configuration and documentation
+**Compatibility**: Fully backward compatible 

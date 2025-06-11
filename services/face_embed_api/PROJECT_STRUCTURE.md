@@ -1,120 +1,119 @@
-# FaceEmbed API 项目结构
+# FaceEmbed API Project Structure
 
-## 📁 目录结构
+## 📁 Directory Structure
 
 ```
 face_embed_api/
-├── 📂 src/                              # 源代码目录
-│   └── face_embed_api/                  # 主要API包
-│       ├── __init__.py                  # 包初始化
-│       ├── app.py                       # FastAPI应用主文件
-│       └── utils.py                     # Hailo推理工具类
+├── 📂 src/                              # Source Code Directory
+│   └── face_embed_api/                  # Main API Package
+│       ├── __init__.py                  # Package Initializer
+│       ├── app.py                       # FastAPI Application Main File
+│       └── utils.py                     # Hailo Inference Utility Classes
 │
-├── 📂 tests/                            # 测试目录
-│   ├── __init__.py                      # 测试包初始化
-│   ├── unit/                            # 单元测试
+├── 📂 tests/                            # Tests Directory
+│   ├── __init__.py                      # Tests Package Initializer
+│   ├── unit/                            # Unit Tests
 │   │   ├── __init__.py
-│   │   └── test_face_embed_api.py       # API单元测试
-│   └── integration/                     # 集成测试
+│   │   └── test_face_embed_api.py       # API Unit Tests
+│   └── integration/                     # Integration Tests
 │       ├── __init__.py
-│       └── test_api_integration.py      # API集成测试
+│       └── test_api_integration.py      # API Integration Tests
 │
-├── 📂 scripts/                          # 脚本目录
-│   ├── run_tests.py                     # 测试运行脚本
-│   ├── test_hailo_request.py            # 单独的API请求测试脚本
-│   └── verify_multi_model.py            # 验证Hailo多模型并发运行的脚本
+├── 📂 scripts/                          # Scripts Directory
+│   ├── run_tests.py                     # Test Runner Script
+│   ├── test_hailo_request.py            # Standalone API Request Test Script
+│   └── verify_multi_model.py            # Script to verify Hailo multi-model concurrent execution
 │
-├── 📂 models/                           # AI模型文件
-│   ├── arcface_mobilefacenet.hef        # 人脸嵌入模型
-│   └── scrfd_10g.hef                   # 人脸检测模型
+├── 📂 models/                           # AI Model Files
+│   ├── arcface_mobilefacenet.hef        # Face Embedding Model
+│   └── scrfd_10g.hef                    # Face Detection Model
 │
-├── 📂 docs/                             # 文档目录
-│   ├── TEST_REPORT.md                   # 测试报告
-│   ├── run_instruction.md               # 运行说明
-│   └── reference/                       # 参考文档
-│       ├── hailo_python_guide.md        # Hailo Python API指南
-│       ├── detection_with_tracker.py    # 参考代码示例
-│       └── utils.py                     # 参考工具类
+├── 📂 docs/                             # Documentation Directory
+│   ├── TEST_REPORT.md                   # Test Report
+│   ├── run_instruction.md               # Running Instructions
+│   └── reference/                       # Reference Documents
+│       ├── hailo_python_guide.md        # Hailo Python API Guide
+│       ├── detection_with_tracker.py    # Reference Code Example
+│       └── utils.py                     # Reference Utility Classes
 │
-├── 📂 logs/                             # 日志目录
-│   └── hailort.log                      # Hailo运行日志
+├── 📂 logs/                             # Logs Directory
+│   └── hailort.log                      # Hailo Runtime Log
 │
-├── 📂 examples/                         # 示例代码目录
-│   └── (待添加示例代码)
+├── 📂 examples/                         # Examples Directory
+│   └── (Example code to be added)
 │
-├── 📄 README.md                         # 项目说明
-├── 📄 PROJECT_STRUCTURE.md              # 项目结构说明 (本文件)
-├── 📄 pyproject.toml                     # 项目配置
-├── 📄 requirements.txt                   # Python依赖
-├── 📄 uv.lock                           # UV锁定文件
-└── 📄 .python-version                   # Python版本
+├── 📄 README.md                         # Project README
+├── 📄 PROJECT_STRUCTURE.md              # Project Structure (This file)
+├── 📄 pyproject.toml                     # Project Configuration
+├── 📄 requirements.txt                   # Python Dependencies
+├── 📄 uv.lock                           # UV Lock File
+└── 📄 .python-version                   # Python Version
 ```
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 1. 启动服务
+### 1. Start the Service
 ```bash
-# 设置PYTHONPATH并使用uvicorn启动
+# Set PYTHONPATH and start with uvicorn
 source .venv/bin/activate
 PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000
 ```
 
-### 2. 运行测试
+### 2. Run Tests
 ```bash
-# 运行所有测试
+# Run all tests
 source .venv/bin/activate
 uv run -- pytest -v
 ```
 
-## 📋 文件说明
+## 📋 File Descriptions
 
-### 核心源码
-- **`src/face_embed_api/app.py`**: 主要的FastAPI应用，包含所有API端点
-- **`src/face_embed_api/utils.py`**: Hailo异步推理工具类
-- **`src/face_embed_api/__init__.py`**: 包导入配置
+### Core Source Code
+- **`src/face_embed_api/app.py`**: The main FastAPI application, containing all API endpoints.
+- **`src/face_embed_api/utils.py`**: Hailo asynchronous inference utility classes.
+- **`src/face_embed_api/__init__.py`**: Package import configurations.
 
-### 测试文件
-- **`tests/unit/test_face_embed_api.py`**: 单元测试，测试各个功能模块
-- **`tests/integration/test_api_integration.py`**: 集成测试，测试完整API流程
+### Test Files
+- **`tests/unit/test_face_embed_api.py`**: Unit tests for individual functional modules.
+- **`tests/integration/test_api_integration.py`**: Integration tests for the complete API flow.
 
-### 脚本工具
-- **`scripts/run_tests.py`**: 运行所有测试的脚本  
-- **`scripts/test_hailo_request.py`**: 单独的API请求测试脚本
-- **`scripts/verify_multi_model.py`**: 验证Hailo多模型并发运行的脚本
+### Script Utilities
+- **`scripts/run_tests.py`**: Script to run all tests.
+- **`scripts/test_hailo_request.py`**: Standalone script for testing API requests.
+- **`scripts/verify_multi_model.py`**: Script to verify concurrent execution of multiple models on Hailo.
 
-### 文档资料
-- **`docs/TEST_REPORT.md`**: 详细的测试报告
-- **`docs/reference/`**: 参考文档和示例代码
+### Documentation
+- **`docs/TEST_REPORT.md`**: Detailed test report.
+- **`docs/reference/`**: Reference documents and code examples.
 
-## 🔧 开发工作流
+## 🔧 Development Workflow
 
-### 添加新功能
-1. 在 `src/face_embed_api/` 中实现功能
-2. 在 `tests/unit/` 中添加单元测试
-3. 在 `tests/integration/` 中添加集成测试
-4. 运行测试确保通过
-5. 更新文档
+### Adding New Features
+1. Implement the feature in `src/face_embed_api/`.
+2. Add unit tests in `tests/unit/`.
+3. Add integration tests in `tests/integration/`.
+4. Run tests to ensure they pass.
+5. Update documentation.
 
-### 部署准备
-1. 运行完整测试套件: `uv run -- pytest -v`
-2. 启动服务: `PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000`
+### Deployment Preparation
+1. Run the full test suite: `uv run -- pytest -v`
+2. Start the service: `PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000`
 
-## 📊 测试覆盖
+## 📊 Test Coverage
 
-- **单元测试**: 19个测试
-- **集成测试**: 11个测试
-- **脚本测试**: 1个测试
-- **总计**: 31个测试
-- **通过率**: 100% (已验证)
+- **Unit Tests**: 19 tests
+- **Integration Tests**: 9 tests
+- **Total**: 28 tests
+- **Pass Rate**: 100% (Verified)
 
-## 🛠️ 技术栈
+## 🛠️ Tech Stack
 
-- **API框架**: FastAPI
-- **AI推理**: Hailo-8 + HailoAsyncInference
-- **测试框架**: pytest + unittest
-- **依赖管理**: UV
-- **文档**: Markdown
+- **API Framework**: FastAPI
+- **AI Inference**: Hailo-8 + HailoAsyncInference
+- **Testing Framework**: pytest + unittest
+- **Dependency Management**: UV
+- **Documentation**: Markdown
 
 ---
 
-*项目结构优化完成于 2024年7月26日* 
+*Project structure optimized on July 27, 2024* 
