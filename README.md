@@ -1,4 +1,4 @@
-# Face Recognition Access Control System
+# AI_Presence_Control
 
 A **distributed** edge face recognition access control system based on the Hailo-8 AI accelerator and Grove Vision AI V2, supporting multi-device concurrency and cross-machine deployment.
 
