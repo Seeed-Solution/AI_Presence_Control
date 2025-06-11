@@ -30,7 +30,22 @@ class TestFaceEmbedAPIIntegration:
     def setup_class(cls):
         """测试类初始化"""
         cls.api_url = "http://localhost:8000"
-        cls.timeout = 10
+        cls.timeout = 20 # Increased timeout for safety
+        
+        # Wait for the server to be ready
+        max_retries = 20 # Increased retries
+        retry_interval = 2  # seconds
+        for i in range(max_retries):
+            try:
+                response = requests.get(f"{cls.api_url}/health", timeout=cls.timeout)
+                if response.status_code == 200:
+                    print("✅ API server is ready.")
+                    break
+            except requests.ConnectionError:
+                print(f"🔌 API server not ready yet. Retrying in {retry_interval}s... ({i+1}/{max_retries})")
+                time.sleep(retry_interval)
+        else:
+            raise RuntimeError("❌ API server did not start in time.")
         
     def _create_test_image(self, width=300, height=300):
         """创建测试图像"""
@@ -51,10 +66,13 @@ class TestFaceEmbedAPIIntegration:
         data = response.json()
         
         assert "status" in data
-        assert "model_loaded" in data
         assert "uptime_ms" in data
+        assert "loaded_models" in data
         assert isinstance(data["uptime_ms"], int)
         assert data["uptime_ms"] >= 0
+        assert isinstance(data["loaded_models"], list)
+        assert "scrfd_10g.hef" in data["loaded_models"]
+        assert "arcface_mobilefacenet.hef" in data["loaded_models"]
     
     def test_api_root_endpoint(self):
         """测试API根端点"""
@@ -104,6 +122,39 @@ class TestFaceEmbedAPIIntegration:
         assert data["processing_time_ms"] > 0
         assert 0.0 <= data["confidence"] <= 1.0
     
+    def test_api_embed_with_landmarks(self):
+        """测试使用关键点进行嵌入"""
+        test_image = self._create_test_image()
+        image_base64 = self._image_to_base64(test_image)
+        
+        # 提供了关键点时，bbox 仍然是必需的，但服务会优先使用关键点进行对齐
+        request_data = {
+            "image_base64": image_base64,
+            "bbox": {"x": 50, "y": 50, "w": 100, "h": 120},
+            "landmarks": [
+                {"x": 84.0, "y": 90.0},
+                {"x": 130.0, "y": 89.0},
+                {"x": 107.0, "y": 117.0},
+                {"x": 89.0, "y": 142.0},
+                {"x": 126.0, "y": 142.0}
+            ]
+        }
+        
+        response = requests.post(
+            f"{self.api_url}/embed", 
+            json=request_data, 
+            timeout=self.timeout
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        
+        assert "vector" in data
+        vector = data["vector"]
+        assert len(vector) == 512
+        norm = np.linalg.norm(vector)
+        assert abs(norm - 1.0) < 0.01
+
     def test_api_embed_invalid_bbox(self):
         """测试无效边界框"""
         test_image = self._create_test_image()
@@ -205,22 +256,54 @@ class TestFaceEmbedAPIIntegration:
             "bbox": {"x": 50, "y": 50, "w": 100, "h": 120}
         }
         
-        # 发送多次相同请求
+        # 多次请求获取向量
         vectors = []
         for _ in range(3):
-            response = requests.post(
-                f"{self.api_url}/embed", 
-                json=request_data, 
-                timeout=self.timeout
-            )
+            response = requests.post(f"{self.api_url}/embed", json=request_data, timeout=self.timeout)
             assert response.status_code == 200
-            vectors.append(response.json()["vector"])
-        
-        # 由于使用了确定性的mock，向量应该是一致的
+            vectors.append(np.array(response.json()["vector"]))
+            
+        # 比较所有向量是否一致
         for i in range(1, len(vectors)):
-            similarity = np.dot(vectors[0], vectors[i])
-            assert similarity > 0.99  # 高相似度
-    
+            np.testing.assert_allclose(vectors[0], vectors[i], rtol=1e-5, atol=1e-5)
+
+    def test_api_detect_and_embed(self):
+        """测试检测并嵌入的组合API"""
+        test_image = self._create_test_image(width=400, height=400)
+        image_base64 = self._image_to_base64(test_image)
+        
+        request_data = {
+            "image_base64": image_base64,
+            "confidence_threshold": 0.4
+        }
+        
+        response = requests.post(
+            f"{self.api_url}/detect_and_embed",
+            json=request_data,
+            timeout=self.timeout
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        
+        # Should return a list of results
+        assert isinstance(data, list)
+        # Our test image should have at least one face
+        assert len(data) > 0
+        
+        face_result = data[0]
+        assert "bbox" in face_result
+        assert "landmarks" in face_result
+        assert "detection_confidence" in face_result
+        assert "embedding" in face_result
+        
+        # Check embedding structure
+        embedding = face_result["embedding"]
+        assert "vector" in embedding
+        assert len(embedding["vector"]) == 512
+        norm = np.linalg.norm(embedding["vector"])
+        assert abs(norm - 1.0) < 0.01
+
     def test_api_performance(self):
         """测试API性能"""
         test_image = self._create_test_image()
@@ -231,21 +314,19 @@ class TestFaceEmbedAPIIntegration:
             "bbox": {"x": 50, "y": 50, "w": 100, "h": 120}
         }
         
-        # 测试单次请求性能
         start_time = time.time()
-        response = requests.post(
-            f"{self.api_url}/embed", 
-            json=request_data, 
-            timeout=self.timeout
-        )
+        response = requests.post(f"{self.api_url}/embed", json=request_data, timeout=self.timeout)
         end_time = time.time()
         
         assert response.status_code == 200
         
-        # API响应时间应该合理 (包括网络延迟)
-        api_time = (end_time - start_time) * 1000
-        assert api_time < 5000  # 小于5秒
+        # 检查端到端延迟
+        e2e_latency = (end_time - start_time) * 1000
+        print(f"E2E Latency: {e2e_latency:.2f}ms")
+        assert e2e_latency < 2000  # 2秒内完成
         
-        # 服务器报告的处理时间应该更快
+        # 检查服务器报告的处理时间
+        # 在mock环境下，这个值是固定的
+        # 在真实硬件上，这个值会反映Hailo的性能
         processing_time = response.json()["processing_time_ms"]
         assert processing_time < 1000  # 小于1秒 

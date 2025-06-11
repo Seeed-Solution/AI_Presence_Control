@@ -32,7 +32,8 @@
 - 🔒 **离线运行**：无需云端依赖
 - 🏢 **多租户**：支持多个独立Collection
 - 📱 **无接触**：基于人脸的身份验证
-- 🎯 **高精度**：基于ArcFace深度学习模型 ✅ **Hailo硬件加速已验证**
+- 🎯 **高精度**：基于ArcFace和SCRFD深度学习模型 ✅ **Hailo硬件加速已验证**
+- 🚀 **人脸检测**：集成了SCRFD人脸检测模型，用于精确的人脸定位和关键点检测
 - 📊 **批量处理**：优化的批量向量提取
 - 🛡️ **生产就绪**：100%测试覆盖，硬件验证完成
 
@@ -153,18 +154,60 @@ API_TIMEOUT=5000       // API超时时间(ms)
 
 ### FaceEmbed API
 
-#### 单张处理
+由于 Hailo-8 硬件一次只能加载和运行一个AI模型，API 已被重构为一体化接口，以简化调用并优化性能。
+
+#### 主要推荐接口
+
+##### 检测并嵌入人脸 (Detect and Embed)
+此接口是标准工作流程的推荐方法。它在单次API调用中完成人脸检测、关键点定位、人脸对齐和特征向量提取。
+
+```bash
+POST http://192.168.10.179:8000/detect_and_embed
+Content-Type: application/json
+
+{
+  "image_base64": "base64_encoded_image"
+}
+```
+**响应示例 (检测到一张人脸)**:
+```json
+[
+  {
+    "bbox": [100, 100, 200, 200],
+    "landmarks": [
+      [120, 120], [180, 120], [150, 150], [130, 180], [170, 180]
+    ],
+    "embedding": [0.123, -0.456, ..., 0.789]
+  }
+]
+```
+*如果未检测到人脸，将返回一个空列表 `[]`。*
+
+---
+
+#### 高级/手动接口
+
+以下接口用于高级场景，例如当您已经通过其他方式获取了人脸边界框（bounding box）和关键点（landmarks）时。
+
+##### 单张处理 (手动)
 ```bash
 POST http://192.168.10.179:8000/embed
 Content-Type: application/json
 
 {
   "image_base64": "base64_encoded_image",
-  "bbox": {"x": 100, "y": 100, "w": 200, "h": 200}
+  "bbox": {"x": 100, "y": 100, "w": 200, "h": 200},
+  "landmarks": [
+      {"x": 120, "y": 120},
+      {"x": 180, "y": 120},
+      {"x": 150, "y": 150},
+      {"x": 130, "y": 180},
+      {"x": 170, "y": 180}
+  ]
 }
 ```
 
-#### 批量处理 (并发优化)
+##### 批量处理 (手动)
 ```bash
 POST http://192.168.10.179:8000/batch_embed
 Content-Type: application/json
@@ -186,10 +229,7 @@ Content-Type: application/json
 Topic: vision/frames/grove_vision_ai_v2_001
 {
   "ts": "2025-06-05T16:30:00Z",
-  "img_b64": "base64_image_data",
-  "bboxes": [
-    {"x": 100, "y": 100, "w": 200, "h": 200, "score": 0.95}
-  ]
+  "img_b64": "base64_image_data"
 }
 ```
 *注：此为Node-RED整合后的标准化格式，详情参见[数据流文档](docs/DATA_FLOW.md)。*
@@ -231,7 +271,7 @@ face_rec_r2000/
 │   │   │       └── utils.py # Hailo异步推理引擎
 │   │   ├── tests/           # 完整测试套件 (28个测试，100%通过)
 │   │   ├── scripts/         # 启动和测试脚本
-│   │   ├── models/          # AI模型文件 (arcface_mobilefacenet.hef)
+│   │   ├── models/          # AI模型文件 (arcface_mobilefacenet.hef, scrfd_10g.hef)
 │   │   └── docs/            # API文档和测试报告
 │   ├── qdrant/              # 向量数据库配置 (主服务器)
 │   ├── mqtt/                # MQTT配置 (主服务器)

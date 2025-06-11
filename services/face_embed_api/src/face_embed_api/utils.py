@@ -89,31 +89,30 @@ class HailoAsyncInference:
         self, completion_info, bindings_list: list, input_batch: list,
     ) -> None:
         """
-        Callback function for handling inference results.
+        Callback function for asynchronous inference.
 
         Args:
-            completion_info: Information about the completion of the 
-                             inference task.
-            bindings_list (list): List of binding objects containing input 
-                                  and output buffers.
-            processed_batch (list): The processed batch of images.
+            completion_info: Information about the async job completion.
+            bindings_list (list): List of bindings objects used in the inference.
+            input_batch (list): The input batch for the inference.
         """
-        if completion_info.exception:
-            logger.error(f'Inference error: {completion_info.exception}')
-        else:
-            for i, bindings in enumerate(bindings_list):
+        # The callback function is called for each completed frame
+        for i, bindings in enumerate(bindings_list):
+            if completion_info.get_status() == HailoStatus.SUCCESS:
                 # If the model has a single output, return the output buffer. 
-                # Else, return a dictionary of output buffers, where the keys are the output names.
-                if len(bindings._output_names) == 1:
-                    result = bindings.output().get_buffer()
+                # For multi-output models like SCRFD, we also return the first output
+                # as the primary detection result array for parsing.
+                if len(bindings._output_names) >= 1:
+                    result = bindings.output(bindings._output_names[0]).get_buffer()
                 else:
-                    result = {
-                        name: np.expand_dims(
-                            bindings.output(name).get_buffer(), axis=0
-                        )
-                        for name in bindings._output_names
-                    }
-                self.output_queue.put((input_batch[i], result))
+                    # Fallback for unexpected cases
+                    logger.warning("Model has no output names, cannot get result.")
+                    result = None
+
+                if self.send_original_frame:
+                    self.output_queue.put((input_batch[i], result))
+                else:
+                    self.output_queue.put(result)
 
     def get_vstream_info(self) -> Tuple[list, list]:
 
@@ -166,7 +165,10 @@ class HailoAsyncInference:
                 bindings_list = []
                 for frame in preprocessed_batch:
                     bindings = self._create_bindings(configured_infer_model)
-                    bindings.input().set_buffer(np.array(frame))
+                    # Ensure frame is a numpy array before setting buffer
+                    if not isinstance(frame, np.ndarray):
+                        frame = np.array(frame, dtype=np.uint8)
+                    bindings.input().set_buffer(frame)
                     bindings_list.append(bindings)
 
                 configured_infer_model.wait_for_async_ready(timeout_ms=10000)

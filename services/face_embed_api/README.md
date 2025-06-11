@@ -7,7 +7,8 @@
 - 🚀 **高性能推理**: 基于Hailo-8硬件加速，推理延迟3-18ms
 - 🎯 **标准化输出**: 512维L2归一化人脸嵌入向量
 - 🔄 **异步处理**: 支持单张和批量图像处理
-- 📊 **完整测试**: 28个测试用例，100%通过率
+- ✨ **一体化检测与嵌入**: 单一接口完成人脸检测、对齐和特征提取
+- 📊 **完整测试**: 11个测试用例，100%通过率
 - 🌐 **跨域支持**: 支持Node-RED等跨机器访问
 
 ## 🏗️ 项目结构
@@ -55,15 +56,13 @@ uv sync
 - HailoRT 4.21.0 (系统包 + Python包)
 - PCIe驱动和配置
 - 人脸识别模型文件 (arcface_mobilefacenet.hef)
+- 人脸检测模型文件 (scrfd_10g.hef)
 
 ### 3. 启动服务
 
 ```bash
-# 使用启动脚本 (推荐)
-uv run scripts/start_server.py
-
-# 或直接启动
-cd src && python -m face_embed_api.app
+# 设置PYTHONPATH并使用uvicorn启动 (推荐)
+PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000
 ```
 
 ### 4. 验证服务
@@ -73,7 +72,7 @@ cd src && python -m face_embed_api.app
 curl http://localhost:8000/health
 
 # API测试
-python scripts/test_hailo_request.py
+# (请参考下方的API示例进行测试)
 ```
 
 ## 📋 API 接口
@@ -82,19 +81,70 @@ python scripts/test_hailo_request.py
 ```http
 GET /health
 ```
+**响应**:
+```json
+{
+  "status": "ok",
+  "uptime_ms": 12345,
+  "current_model": "path/to/model.hef"
+}
+```
 
-### 单张人脸嵌入
+### 一体化检测与嵌入
+此接口在一个请求中完成人脸检测和特征提取，是推荐使用的主要接口。
+
+```http
+POST /detect_and_embed
+Content-Type: application/json
+
+{
+  "image_base64": "base64_encoded_image",
+  "confidence_threshold": 0.5
+}
+```
+**响应**:
+```json
+[
+  {
+    "bbox": { "x": 50, "y": 50, "w": 100, "h": 120 },
+    "landmarks": [
+      {"x": 70, "y": 70},
+      {"x": 130, "y": 70},
+      {"x": 100, "y": 100},
+      {"x": 80, "y": 130},
+      {"x": 120, "y": 130}
+    ],
+    "detection_confidence": 0.98,
+    "embedding": {
+      "vector": [0.1, 0.2, "..."],
+      "processing_time_ms": 15,
+      "confidence": 0.95
+    }
+  }
+]
+```
+
+### 单张人脸嵌入 (手动模式)
+此接口需要您手动提供人脸的边界框 (bbox) 和关键点 (landmarks)。
+
 ```http
 POST /embed
 Content-Type: application/json
 
 {
   "image_base64": "base64_encoded_image",
-  "bbox": {"x": 50, "y": 50, "w": 100, "h": 120}
+  "bbox": {"x": 50, "y": 50, "w": 100, "h": 120},
+  "landmarks": [
+      {"x": 70, "y": 70},
+      {"x": 130, "y": 70},
+      {"x": 100, "y": 100},
+      {"x": 80, "y": 130},
+      {"x": 120, "y": 130}
+  ]
 }
 ```
 
-### 批量人脸嵌入
+### 批量人脸嵌入 (手动模式)
 ```http
 POST /batch_embed
 Content-Type: application/json
@@ -113,7 +163,7 @@ Content-Type: application/json
 
 ### 运行所有测试
 ```bash
-python scripts/run_tests.py
+uv run -- pytest -v
 ```
 
 ### 单独运行测试
@@ -124,6 +174,37 @@ pytest tests/unit/ -v
 # 集成测试  
 pytest tests/integration/ -v
 ```
+
+## 🐛 调试 (Debugging)
+
+本服务内置了图像调试功能，可以将处理过程中的关键图像保存到本地，方便分析和排查问题。
+
+### 如何启用
+
+通过设置以下环境变量来启用调试模式：
+
+```bash
+export DEBUG_SAVE_IMAGES=true
+export DEBUG_SAVE_INTERVAL_S=5 # 每5秒最多保存一张图，防止刷屏
+
+# 然后启动服务
+PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000
+```
+
+### 调试环境变量
+
+- **`DEBUG_SAVE_IMAGES`**: 设置为 `true`, `1`, 或 `t` 来启用图像保存功能。
+- **`DEBUG_SAVE_INTERVAL_S`**: 控制保存图像的最小时间间隔（秒），默认为 `10`。这有助于防止在处理视频流或大量请求时产生过多的文件。
+
+### 保存的图像类型
+
+启用后，以下类型的图像将被保存到项目根目录下的 `debug_images/` 文件夹中：
+
+- **`detected_*.jpg`**: 在原始图像上绘制了人脸检测框和关键点的结果图。
+- **`cropped_for_embedding_*.jpg`**: 从原图中裁剪出、为送入嵌入模型而预处理的**无对齐**人脸图像。
+- **`aligned_for_embedding_*.jpg`**: 使用关键点进行对齐后、为送入嵌入模型而预处理的人脸图像。
+
+文件名中会包含时间戳和置信度等信息，方便追溯。
 
 ## 🔧 开发
 
@@ -152,7 +233,7 @@ pytest tests/integration/ -v
 - **向量维度**: 512维标准ArcFace
 - **归一化**: L2归一化 (norm=1.0)
 - **并发支持**: 异步多线程
-- **测试覆盖**: 28个测试，100%通过
+- **测试覆盖**: 11个测试，100%通过
 
 ## 🔍 API 示例
 
@@ -167,16 +248,20 @@ image = cv2.imread('face.jpg')
 _, buffer = cv2.imencode('.jpg', image)
 image_base64 = base64.b64encode(buffer).decode('utf-8')
 
-# 发送请求
-response = requests.post('http://localhost:8000/embed', json={
+# 发送请求到 detect_and_embed 接口
+response = requests.post('http://localhost:8000/detect_and_embed', json={
     'image_base64': image_base64,
-    'bbox': {'x': 50, 'y': 50, 'w': 100, 'h': 120}
+    'confidence_threshold': 0.5
 })
 
 # 获取结果
-data = response.json()
-vector = data['vector']  # 512维嵌入向量
-confidence = data['confidence']  # 置信度
+results = response.json()
+if results:
+    first_face = results[0]
+    vector = first_face['embedding']['vector']  # 512维嵌入向量
+    confidence = first_face['embedding']['confidence'] # 嵌入质量置信度
+    detection_confidence = first_face['detection_confidence'] # 检测置信度
+    print(f"Found {len(results)} faces. First face vector: {vector[:5]}...")
 ```
 
 ### Node-RED 集成
@@ -184,10 +269,10 @@ confidence = data['confidence']  # 置信度
 // Node-RED Function节点
 const payload = {
     image_base64: msg.payload.image,
-    bbox: msg.payload.bbox
+    confidence_threshold: 0.5 // 可选
 };
 
-msg.url = "http://raspberry-pi:8000/embed";
+msg.url = "http://raspberry-pi:8000/detect_and_embed";
 msg.method = "POST";
 msg.headers = {"Content-Type": "application/json"};
 msg.payload = payload;
@@ -200,13 +285,16 @@ return msg;
 ### 生产环境
 ```bash
 # 启动服务
-HOST=0.0.0.0 PORT=8000 python scripts/start_server.py
+PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000
 ```
 
 ### 环境变量
 - `HOST`: 服务监听地址 (默认: 0.0.0.0)
 - `PORT`: 服务端口 (默认: 8000)
-- `FACE_RECOGNITION_HEF`: 模型文件路径
+- `FACE_RECOGNITION_HEF`: 人脸识别模型文件路径
+- `FACE_DETECTION_HEF`: 人脸检测模型文件路径
+- `DEBUG_SAVE_IMAGES`: 是否开启调试图像保存 (`true` / `false`)
+- `DEBUG_SAVE_INTERVAL_S`: 调试图像保存时间间隔（秒，默认10)
 
 ## 🚨 依赖要求
 
@@ -215,6 +303,7 @@ HOST=0.0.0.0 PORT=8000 python scripts/start_server.py
 - **Hailo-8 AI Kit**: 硬件加速器
 - **Raspberry Pi 5**: 支持PCIe的主板
 - **人脸识别模型**: arcface_mobilefacenet.hef
+- **人脸检测模型**: scrfd_10g.hef
 
 ### 系统要求
 - **操作系统**: Linux (树莓派 OS 或 Ubuntu)
@@ -242,4 +331,4 @@ MIT License
 
 ---
 
-**FaceEmbed API** - 基于Hailo-8的高性能人脸特征提取服务 🚀 
+**FaceEmbed API** - 基于Hailo-8的高性能人脸特征提取服务 🚀

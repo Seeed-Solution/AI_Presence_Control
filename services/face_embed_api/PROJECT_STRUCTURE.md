@@ -20,12 +20,12 @@ face_embed_api/
 │       └── test_api_integration.py      # API集成测试
 │
 ├── 📂 scripts/                          # 脚本目录
-│   ├── start_server.py                  # 服务器启动脚本
-│   ├── test_hailo_request.py           # API测试脚本
-│   └── run_tests.py                    # 测试运行脚本
+│   ├── run_tests.py                     # 测试运行脚本
+│   ├── test_hailo_request.py            # 单独的API请求测试脚本
+│   └── verify_multi_model.py            # 验证Hailo多模型并发运行的脚本
 │
 ├── 📂 models/                           # AI模型文件
-│   ├── arcface_mobilefacenet.hef       # 人脸嵌入模型
+│   ├── arcface_mobilefacenet.hef        # 人脸嵌入模型
 │   └── scrfd_10g.hef                   # 人脸检测模型
 │
 ├── 📂 docs/                             # 文档目录
@@ -44,43 +44,26 @@ face_embed_api/
 │
 ├── 📄 README.md                         # 项目说明
 ├── 📄 PROJECT_STRUCTURE.md              # 项目结构说明 (本文件)
-├── 📄 pyproject.toml                    # 项目配置
-├── 📄 requirements.txt                  # Python依赖
-├── 📄 uv.lock                          # UV锁定文件
-├── 📄 Dockerfile                       # Docker配置
-├── 📄 .python-version                  # Python版本
-└── 📄 main.py                          # 备用启动文件
+├── 📄 pyproject.toml                     # 项目配置
+├── 📄 requirements.txt                   # Python依赖
+├── 📄 uv.lock                           # UV锁定文件
+└── 📄 .python-version                   # Python版本
 ```
 
 ## 🚀 快速开始
 
 ### 1. 启动服务
 ```bash
-# 方法1: 使用启动脚本 (推荐)
+# 设置PYTHONPATH并使用uvicorn启动
 source .venv/bin/activate
-python scripts/start_server.py
-
-# 方法2: 直接启动
-source .venv/bin/activate
-cd src && python -m face_embed_api.app
+PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000
 ```
 
 ### 2. 运行测试
 ```bash
-# 方法1: 使用测试脚本 (推荐)
+# 运行所有测试
 source .venv/bin/activate
-python scripts/run_tests.py
-
-# 方法2: 直接运行pytest
-source .venv/bin/activate
-pytest tests/ -v
-```
-
-### 3. 测试API
-```bash
-# 使用测试脚本
-source .venv/bin/activate
-python scripts/test_hailo_request.py
+uv run -- pytest -v
 ```
 
 ## 📋 文件说明
@@ -95,9 +78,9 @@ python scripts/test_hailo_request.py
 - **`tests/integration/test_api_integration.py`**: 集成测试，测试完整API流程
 
 ### 脚本工具
-- **`scripts/start_server.py`**: 启动服务器的便捷脚本
 - **`scripts/run_tests.py`**: 运行所有测试的脚本  
-- **`scripts/test_hailo_request.py`**: API功能测试脚本
+- **`scripts/test_hailo_request.py`**: 单独的API请求测试脚本
+- **`scripts/verify_multi_model.py`**: 验证Hailo多模型并发运行的脚本
 
 ### 文档资料
 - **`docs/TEST_REPORT.md`**: 详细的测试报告
@@ -113,16 +96,16 @@ python scripts/test_hailo_request.py
 5. 更新文档
 
 ### 部署准备
-1. 运行完整测试套件: `python scripts/run_tests.py`
-2. 检查API功能: `python scripts/test_hailo_request.py`
-3. 启动服务: `python scripts/start_server.py`
+1. 运行完整测试套件: `uv run -- pytest -v`
+2. 启动服务: `PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000`
 
 ## 📊 测试覆盖
 
 - **单元测试**: 19个测试
-- **集成测试**: 9个测试
-- **总计**: 28个测试
-- **通过率**: 100%
+- **集成测试**: 11个测试
+- **脚本测试**: 1个测试
+- **总计**: 31个测试
+- **通过率**: 100% (已验证)
 
 ## 🛠️ 技术栈
 
@@ -134,4 +117,4 @@ python scripts/test_hailo_request.py
 
 ---
 
-*项目结构优化完成于 2024年6月6日* 
+*项目结构优化完成于 2024年7月26日* 

@@ -543,7 +543,7 @@
         "to": "",
         "reg": false,
         "x": 1020,
-        "y": 380,
+        "y": 400,
         "wires": [
             [
                 "a44331a86a7dc340"
@@ -708,9 +708,9 @@
         "g": "8c88939dfc248608",
         "name": "pub",
         "links": [
-            "bf72268f8a9d27a0",
+            "80ea757c32b9913b",
             "a44331a86a7dc340",
-            "80ea757c32b9913b"
+            "bf72268f8a9d27a0"
         ],
         "x": 1070,
         "y": 580,
@@ -747,7 +747,7 @@
             "a3ff982e6c0d205d"
         ],
         "x": 1250,
-        "y": 380,
+        "y": 400,
         "wires": [],
         "l": true
     },
@@ -1048,7 +1048,7 @@
         ]
     },
     {
-        "id": "409871c0949177f8",
+        "id": "8c88939dfc248608",
         "type": "group",
         "z": "f54138caa1c8a1ae",
         "style": {
@@ -1061,65 +1061,14 @@
             "color": "#a4a4a4"
         },
         "nodes": [
-            "7b60f4ba019f1749",
-            "23a2040bdd246943",
-            "e48cf7986bc612ae",
-            "6748f017d2dabecb",
-            "80ea757c32b9913b"
+            "6ad80085190e5ec4",
+            "a3ff982e6c0d205d",
+            "006879ed95d2920d"
         ],
-        "x": 274,
-        "y": 19,
-        "w": 1312,
-        "h": 142
-    },
-    {
-        "id": "305158fcab074826",
-        "type": "group",
-        "z": "f54138caa1c8a1ae",
-        "style": {
-            "stroke": "#999999",
-            "stroke-opacity": "1",
-            "fill": "none",
-            "fill-opacity": "1",
-            "label": true,
-            "label-position": "nw",
-            "color": "#a4a4a4"
-        },
-        "nodes": [
-            "32e42483ac76b0e4",
-            "c87d0fd5fafe4f59",
-            "195442578d4a91b3",
-            "32ad13252fa2a166",
-            "bf72268f8a9d27a0",
-            "964fdf92823e0d1c"
-        ],
-        "x": 354,
+        "x": 974,
         "y": 479,
-        "w": 612,
-        "h": 202
-    },
-    {
-        "id": "a971c4f96839364e",
-        "type": "group",
-        "z": "f54138caa1c8a1ae",
-        "style": {
-            "stroke": "#999999",
-            "stroke-opacity": "1",
-            "fill": "none",
-            "fill-opacity": "1",
-            "label": true,
-            "label-position": "nw",
-            "color": "#a4a4a4"
-        },
-        "nodes": [
-            "d2e1fd0a7353c49b",
-            "69cc677d5eeb6285",
-            "8732ffe74f7d75d7"
-        ],
-        "x": 274,
-        "y": 179,
-        "w": 1098,
-        "h": 268
+        "w": 312,
+        "h": 142
     },
     {
         "id": "cc6c35456a15da28",
@@ -1150,7 +1099,7 @@
         "h": 142
     },
     {
-        "id": "8c88939dfc248608",
+        "id": "a971c4f96839364e",
         "type": "group",
         "z": "f54138caa1c8a1ae",
         "style": {
@@ -1163,13 +1112,64 @@
             "color": "#a4a4a4"
         },
         "nodes": [
-            "6ad80085190e5ec4",
-            "a3ff982e6c0d205d",
-            "006879ed95d2920d"
+            "d2e1fd0a7353c49b",
+            "8732ffe74f7d75d7",
+            "69cc677d5eeb6285"
         ],
-        "x": 974,
+        "x": 274,
+        "y": 179,
+        "w": 1098,
+        "h": 288
+    },
+    {
+        "id": "305158fcab074826",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "32e42483ac76b0e4",
+            "c87d0fd5fafe4f59",
+            "195442578d4a91b3",
+            "32ad13252fa2a166",
+            "bf72268f8a9d27a0",
+            "964fdf92823e0d1c"
+        ],
+        "x": 354,
         "y": 479,
-        "w": 312,
+        "w": 612,
+        "h": 202
+    },
+    {
+        "id": "409871c0949177f8",
+        "type": "group",
+        "z": "f54138caa1c8a1ae",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "7b60f4ba019f1749",
+            "23a2040bdd246943",
+            "e48cf7986bc612ae",
+            "6748f017d2dabecb",
+            "80ea757c32b9913b"
+        ],
+        "x": 274,
+        "y": 19,
+        "w": 1312,
         "h": 142
     },
     {
@@ -1196,7 +1196,7 @@
         "x": 554,
         "y": 279,
         "w": 792,
-        "h": 142
+        "h": 162
     },
     {
         "id": "34867ff4d0f1a72d",
@@ -1240,7 +1240,7 @@
         "id": "global_config_trigger",
         "type": "inject",
         "z": "face_access_main_flow",
-        "name": "启动时加载配置 (Load on Start)",
+        "name": "Global Config (Load on Start)",
         "props": [
             {
                 "p": "payload"
@@ -1257,7 +1257,7 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 170,
+        "x": 150,
         "y": 20,
         "wires": [
             [
@@ -1270,7 +1270,7 @@
         "type": "function",
         "z": "face_access_main_flow",
         "name": "全局配置 (Global Config)",
-        "func": "// --- 全局配置 ---\n// 在此统一设置所有外部服务的地址和参数\n// 此节点将在启动时自动运行一次\n\n// Qdrant 向量数据库配置\nflow.set('qdrant_host', 'localhost');\nflow.set('qdrant_port', '6333');\nflow.set('qdrant_api_key', 'face_access_2025');\n\n// Hailo AI芯片 (人脸向量API) 配置\nflow.set('hailo_host', '192.168.10.179');\nflow.set('hailo_port', '8000');\n\n// Grove Vision AI 摄像头配置\nflow.set('image_width', 480);\nflow.set('image_height', 480);\n\nnode.log(\"Global configuration loaded.\");\n\nreturn msg;",
+        "func": "// --- 全局配置 ---\n// 在此统一设置所有外部服务的地址和参数\n// 此节点将在启动时自动运行一次\n\n// Qdrant 向量数据库配置\nflow.set('qdrant_host', 'localhost');\nflow.set('qdrant_port', '6333');\nflow.set('qdrant_api_key', 'face_access_2025');\n\n// Hailo AI芯片 (人脸向量API) 配置\nflow.set('hailo_host', '192.168.10.179');\nflow.set('hailo_port', '8000');\n\n// Grove Vision AI 摄像头配置\nflow.set('image_width', 640);\nflow.set('image_height', 480);\n\n// Grove Vision AI 分辨率配置 (AT+RSL=<width>,<height>)\n// 支持的分辨率请参考设备文档，例如: '240,240' 或 '480,480'\n// 参考: https://github.com/Seeed-Studio/SSCMA-Micro/blob/main/docs/protocol/at-protocol-en_US.md\nflow.set('resolution', '640,480');\n\nnode.log(\"Global configuration loaded.\");\n\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -1287,15 +1287,15 @@
         "id": "api_url_configurator",
         "type": "function",
         "z": "face_access_main_flow",
-        "name": "API URL 配置器",
-        "func": "// 从Flow上下文中获取Hailo配置\nconst faceEmbedHost = flow.get('hailo_host') || '192.168.10.179';\nconst faceEmbedPort = flow.get('hailo_port') || '8000';\n\n// 设置API URL\nmsg.url = `http://${faceEmbedHost}:${faceEmbedPort}/embed`;\n\n// 添加超时配置\nmsg.timeout = 5000; // 5秒超时\n\nreturn msg;",
+        "name": "API URL Configuration for Detect & Embed",
+        "func": "// 读取环境变量或使用默认值\nconst faceEmbedHost = flow.get('hailo_host') || '192.168.10.179';\nconst faceEmbedPort = flow.get('hailo_port') || '8000';\n\n// 设置API URL为新的一体化端点\nmsg.url = `http://${faceEmbedHost}:${faceEmbedPort}/detect_and_embed`;\nmsg.timeout = 5000; // 设置5秒超时\n\n// 准备请求体，只包含图像\nmsg.payload = {\n    image_base64: msg.payload.img_b64\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 530,
+        "x": 490,
         "y": 280,
         "wires": [
             [
@@ -1332,11 +1332,11 @@
                 "valueValue": "NodeRED-FaceAccess/1.0"
             }
         ],
-        "x": 730,
+        "x": 760,
         "y": 280,
         "wires": [
             [
-                "vector_search_request"
+                "vision_frame_processor"
             ]
         ]
     },
@@ -1352,7 +1352,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 960,
+        "x": 1160,
         "y": 280,
         "wires": [
             [
@@ -1376,7 +1376,7 @@
         "authType": "",
         "senderr": false,
         "headers": [],
-        "x": 1170,
+        "x": 1370,
         "y": 280,
         "wires": [
             [
@@ -1396,7 +1396,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1370,
+        "x": 1570,
         "y": 280,
         "wires": [
             [
@@ -1420,7 +1420,7 @@
         "correl": "",
         "expiry": "",
         "broker": "mqtt_broker",
-        "x": 1570,
+        "x": 1770,
         "y": 260,
         "wires": []
     },
@@ -1435,8 +1435,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1570,
-        "y": 300,
+        "x": 1770,
+        "y": 320,
         "wires": [
             []
         ]
@@ -1445,7 +1445,7 @@
         "id": "manual_enroll_trigger",
         "type": "inject",
         "z": "face_access_main_flow",
-        "name": "手动人脸入库 (张三)",
+        "name": "Face Enroll",
         "props": [
             {
                 "p": "payload"
@@ -1462,7 +1462,7 @@
         "topic": "access/enroll/grove_vision_ai_v2_eb9e4d18",
         "payload": "{\"name\":\"张三\",\"action\":\"start\",\"collection\":\"office_entrance\"}",
         "payloadType": "json",
-        "x": 130,
+        "x": 100,
         "y": 440,
         "wires": [
             [
@@ -1556,63 +1556,6 @@
         ]
     },
     {
-        "id": "d5fd94edc9d2f6bc",
-        "type": "change",
-        "z": "face_access_main_flow",
-        "name": "send stop",
-        "rules": [
-            {
-                "t": "set",
-                "p": "payload",
-                "pt": "msg",
-                "to": "stop",
-                "tot": "str",
-                "dc": true
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 240,
-        "y": 160,
-        "wires": [
-            [
-                "786320639347a67f"
-            ]
-        ]
-    },
-    {
-        "id": "acd8dadac5c088d4",
-        "type": "inject",
-        "z": "face_access_main_flow",
-        "name": "Stop",
-        "props": [
-            {
-                "p": "payload"
-            },
-            {
-                "p": "topic",
-                "vt": "str"
-            }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "topic": "grove_vision_ai_v2_eb9e4d18",
-        "payload": "",
-        "payloadType": "date",
-        "x": 110,
-        "y": 160,
-        "wires": [
-            [
-                "d5fd94edc9d2f6bc"
-            ]
-        ]
-    },
-    {
         "id": "950c446d7e951013",
         "type": "inject",
         "z": "face_access_main_flow",
@@ -1633,7 +1576,7 @@
         "topic": "grove_vision_ai_v2_eb9e4d18",
         "payload": "",
         "payloadType": "date",
-        "x": 110,
+        "x": 90,
         "y": 80,
         "wires": [
             [
@@ -1662,7 +1605,8 @@
         "y": 120,
         "wires": [
             [
-                "grove_data_combiner"
+                "grove_data_combiner",
+                "ef88f812ba82787c"
             ],
             [
                 "grove_data_combiner"
@@ -1714,7 +1658,27 @@
         "y": 120,
         "wires": [
             [
-                "vision_frame_processor"
+                "detection_filter"
+            ]
+        ]
+    },
+    {
+        "id": "detection_filter",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "有检测结果?",
+        "func": "// 检查 `msg.payload.bboxes` 数组是否存在且不为空\nif (msg.payload && Array.isArray(msg.payload.bboxes) && msg.payload.bboxes.length > 0) {\n    // 如果有检测结果，则将消息传递给下一个节点\n    return msg; \n} else {\n    // 如果没有检测到目标，则中止流程，不返回任何消息\n    node.warn(\"未检测到目标，已中止API调用。\");\n    return null; \n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1180,
+        "y": 120,
+        "wires": [
+            [
+                "api_url_configurator"
             ]
         ]
     },
@@ -1730,7 +1694,7 @@
         "finalize": "",
         "libs": [],
         "x": 720,
-        "y": 200,
+        "y": 180,
         "wires": [
             []
         ]
@@ -1740,69 +1704,19 @@
         "type": "function",
         "z": "face_access_main_flow",
         "name": "处理视觉帧",
-        "func": "// 解析标准化的视觉帧数据\nconst payload = msg.payload;\nconst deviceId = msg.deviceId;\n\n// 检查是否处于入库模式\nconst enrollState = flow.get('enroll_' + deviceId);\n\nif (enrollState && enrollState.status === 'collecting') {\n    // 如果是入库模式，将消息路由到第二个输出端口\n    // 不需要选择最大人脸，每一帧都用于入库\n    if (!payload.bboxes || payload.bboxes.length === 0) {\n        return null; // 入库时也需要有人脸\n    }\n    \n    // 入库时也选择最大面积的人脸以保证质量\n    let maxBbox = null;\n    let maxArea = 0;\n    for (const bbox of payload.bboxes) {\n        const area = bbox.w * bbox.h;\n        if (area > maxArea && bbox.score > 0.7) { // 使用同样的分数阈值\n            maxArea = area;\n            maxBbox = bbox;\n        }\n    }\n\n    if (!maxBbox) {\n        node.warn('No valid face found for enrollment on ' + deviceId);\n        return null;\n    }\n\n    msg.payload = {\n        image_base64: payload.img_b64,\n        bbox: {\n            x: maxBbox.x,\n            y: maxBbox.y,\n            w: maxBbox.w,\n            h: maxBbox.h\n        }\n    };\n    \n    node.log(`Collecting frame for enrollment: ${deviceId}`);\n    return [null, msg]; // 发送到输出2\n}\n\n// --- 以下是正常的识别流程 ---\n\n// 验证数据格式\nif (!payload.bboxes || !Array.isArray(payload.bboxes) || payload.bboxes.length === 0) {\n    node.warn('No face detected in frame from ' + deviceId);\n    return null;\n}\n\n// 选择最大面积的人脸\nlet maxBbox = null;\nlet maxArea = 0;\n\nfor (const bbox of payload.bboxes) {\n    const area = bbox.w * bbox.h;\n    if (area > maxArea && bbox.score > 0.7) {\n        maxArea = area;\n        maxBbox = bbox;\n    }\n}\n\nif (!maxBbox) {\n    node.warn('No valid face bbox found for ' + deviceId);\n    return null;\n}\n\n// 准备FaceEmbed API请求\nmsg.deviceId = deviceId;\nmsg.originalPayload = payload;\nmsg.payload = {\n    image_base64: payload.img_b64,\n    bbox: {\n        x: maxBbox.x,\n        y: maxBbox.y,\n        w: maxBbox.w,\n        h: maxBbox.h\n    }\n};\n\nnode.log(`Processing face for ${deviceId}: bbox=${JSON.stringify(msg.payload.bbox)}, area=${maxArea}`);\nreturn [msg, null]; // 发送到输出1",
+        "func": "const results = msg.payload;\n\n// 检查API是否返回了有效的人脸数组\nif (!Array.isArray(results) || results.length === 0) {\n    // 如果没有检测到人脸，则终止流程\n    return null; \n}\n\nlet largestFace = null;\nlet maxArea = 0;\n\nfor (const face of results) {\n    const bbox = face.bbox;\n    \n    // 修正：检查bbox是否为包含x,y,w,h的对象\n    if (bbox && typeof bbox.x === 'number' && typeof bbox.y === 'number' && typeof bbox.w === 'number' && typeof bbox.h === 'number') {\n        const area = bbox.w * bbox.h;\n        if (area > maxArea) {\n            maxArea = area;\n            largestFace = face;\n        }\n    } else {\n        node.warn(`收到的bbox格式不正确: ${JSON.stringify(bbox)}`);\n    }\n}\n\nif (!largestFace) {\n    node.warn(\"检测到的人脸数据中没有有效的边界框。\");\n    return null;\n}\n\n// 修正：正确地从API响应中提取嵌套的数据\nconst newMsg = {\n    ...msg,\n    payload: {\n        embedding: largestFace.embedding.vector,\n        bbox: largestFace.bbox,\n        landmarks: largestFace.landmarks,\n        // 准备给下一个节点的数据\n        vector: largestFace.embedding.vector,\n        confidence: largestFace.embedding.confidence,\n        processing_time_ms: largestFace.embedding.processing_time_ms,\n        detection_confidence: largestFace.detection_confidence\n    },\n    originalImage: msg.originalImage || msg.payload.image_base64\n};\n\n// 根据上下文判断是识别流程还是入库流程\nconst deviceId = msg.deviceId;\nconst enrollState = flow.get('enroll_' + deviceId);\n\nif (enrollState && enrollState.status === 'collecting') {\n    return [null, newMsg];\n} else {\n    return [newMsg, null];\n}\n",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 310,
-        "y": 300,
+        "x": 940,
+        "y": 280,
         "wires": [
             [
-                "api_url_configurator"
+                "vector_search_request"
             ],
-            [
-                "api_url_configurator_enroll"
-            ]
-        ]
-    },
-    {
-        "id": "api_url_configurator_enroll",
-        "type": "function",
-        "z": "face_access_main_flow",
-        "name": "API URL (Enroll)",
-        "func": "const faceEmbedHost = flow.get('hailo_host') || '192.168.10.179';\nconst faceEmbedPort = flow.get('hailo_port') || '8000';\nmsg.url = `http://${faceEmbedHost}:${faceEmbedPort}/embed`;\nmsg.timeout = 5000;\nreturn msg;",
-        "outputs": 1,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 520,
-        "y": 340,
-        "wires": [
-            [
-                "face_embed_request_enroll"
-            ]
-        ]
-    },
-    {
-        "id": "face_embed_request_enroll",
-        "type": "http request",
-        "z": "face_access_main_flow",
-        "name": "FaceEmbed API (Enroll)",
-        "method": "POST",
-        "ret": "obj",
-        "paytoqs": "ignore",
-        "url": "",
-        "tls": "",
-        "persist": false,
-        "proxy": "",
-        "insecureHTTPParser": false,
-        "authType": "",
-        "senderr": false,
-        "headers": [
-            {
-                "keyType": "other",
-                "keyValue": "Content-Type",
-                "valueType": "other",
-                "valueValue": "application/json"
-            }
-        ],
-        "x": 730,
-        "y": 340,
-        "wires": [
             [
                 "collect_and_save_enroll_vector"
             ]
@@ -1936,6 +1850,199 @@
         "wires": []
     },
     {
+        "id": "set_resolution_trigger",
+        "type": "inject",
+        "z": "face_access_main_flow",
+        "name": "setup camera resolution",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "grove_vision_ai_v2_eb9e4d18",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 220,
+        "wires": [
+            [
+                "build_resolution_command"
+            ]
+        ]
+    },
+    {
+        "id": "build_resolution_command",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "build AT command",
+        "func": "// 从全局配置中获取分辨率字符串，例如 '240,240' 或 '480,480'\nconst resolution = flow.get('resolution') || '240,240';\n// 从触发器消息中获取设备ID\nconst deviceId = msg.topic || 'grove_vision_ai_v2_eb9e4d18';\n\n// --- 分辨率到OPT_ID的映射 ---\n// !!重要!!: 此映射是基于通用实践的推断，您需要根据完整的设备文档来确认正确的OPT_ID\n// AT+SENSOR=<SENSOR_ID,ENABLE/DISABLE,OPT_ID>\\r\n// 参考: https://github.com/Seeed-Studio/SSCMA-Micro/blob/main/docs/protocol/at-protocol-en_US.md\nconst resolutionMap = {\n    '240,240': 0, // 假设 OPT_ID 0 是 240x240\n    '480,480': 1,  // 假设 OPT_ID 1 是 480x480 (需要验证)\n    '640,480': 2\n};\n\nconst opt_id = resolutionMap[resolution];\nif (typeof opt_id === 'undefined') {\n    node.error(`不支持的分辨率配置: ${resolution}`);\n    return null;\n}\n\n// 构造用于发送AT指令的MQTT主题\nconst commandTopic = `sscma/v0/${deviceId}/rx`;\n\n// 构造设置传感器的AT指令 (sensor_id=1, enable=1)\nconst atCommand = `AT+SENSOR=1,1,${opt_id}\\r\\n`;\n\nnode.log(`准备发送指令到 ${commandTopic}: ${atCommand}`);\n\nmsg.topic = commandTopic;\n// 将字符串指令转换为设备需要的Buffer格式\nmsg.payload = Buffer.from(atCommand);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 220,
+        "wires": [
+            [
+                "resolution_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "resolution_mqtt_out",
+        "type": "mqtt out",
+        "z": "face_access_main_flow",
+        "name": "send Command",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "mqtt_broker",
+        "x": 580,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "delete_person_trigger",
+        "type": "inject",
+        "z": "face_access_main_flow",
+        "name": "Del Face",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"collection\":\"office_entrance\",\"name\":\"李四\"}",
+        "payloadType": "json",
+        "x": 100,
+        "y": 500,
+        "wires": [
+            [
+                "build_qdrant_delete_request"
+            ]
+        ]
+    },
+    {
+        "id": "build_qdrant_delete_request",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "构建删除请求",
+        "func": "// 从输入中获取 collection 和 name\nconst collection = msg.payload.collection;\nconst nameToDelete = msg.payload.name;\n\nif (!collection || !nameToDelete) {\n    node.error(\"删除失败：必须在输入中提供 'collection' 和 'name'\", msg);\n    return null;\n}\n\n// 从Flow上下文中获取Qdrant配置\nconst qdrantHost = flow.get('qdrant_host') || 'localhost';\nconst qdrantPort = flow.get('qdrant_port') || '6333';\n\n// 设置Qdrant删除点的API端点\nmsg.url = `http://${qdrantHost}:${qdrantPort}/collections/${collection}/points/delete`;\n\n// Qdrant的删除操作是POST请求\nmsg.method = 'POST';\n\n// 构建删除过滤器\nmsg.payload = {\n    \"filter\": {\n        \"must\": [\n            {\n                \"key\": \"name\",\n                \"match\": {\n                    \"value\": nameToDelete\n                }\n            }\n        ]\n    }\n};\n\n// 设置HTTP请求头\nconst qdrantApiKey = flow.get('qdrant_api_key');\nmsg.headers = { 'Content-Type': 'application/json' };\nif (qdrantApiKey) {\n    msg.headers['api-key'] = qdrantApiKey;\n}\n\nnode.log(`准备从'${collection}'中删除名为'${nameToDelete}'的数据`);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 500,
+        "wires": [
+            [
+                "send_qdrant_delete"
+            ]
+        ]
+    },
+    {
+        "id": "send_qdrant_delete",
+        "type": "http request",
+        "z": "face_access_main_flow",
+        "name": "Qdrant删除",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 580,
+        "y": 500,
+        "wires": [
+            [
+                "delete_result_debug"
+            ]
+        ]
+    },
+    {
+        "id": "delete_result_debug",
+        "type": "debug",
+        "z": "face_access_main_flow",
+        "name": "删除结果",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "payload.status",
+        "statusType": "msg",
+        "x": 760,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "ef88f812ba82787c",
+        "type": "function",
+        "z": "face_access_main_flow",
+        "name": "image resolution check",
+        "func": "function getJpegSize(buffer) {\n    let i = 2; // Skip the JPEG header (0xFFD8)\n    while (i < buffer.length) {\n        if (buffer[i] !== 0xFF) {\n            break;\n        }\n\n        const marker = buffer[i + 1];\n        const length = buffer.readUInt16BE(i + 2);\n\n        // Start Of Frame markers (not all SOF markers, but common ones)\n        if (marker === 0xC0 || marker === 0xC2) {\n            const height = buffer.readUInt16BE(i + 5);\n            const width = buffer.readUInt16BE(i + 7);\n            return { width, height };\n        }\n\n        i += 2 + length;\n    }\n    return null;\n}\n\n// Step 1: 解析 base64 为 Buffer\nconst base64 = msg.payload.replace(/^data:image\\/\\w+;base64,/, '');\nconst buffer = Buffer.from(base64, 'base64');\n\n// Step 2: 获取尺寸\nconst size = getJpegSize(buffer);\nif (size) {\n    msg.payload = size;\n} else {\n    msg.payload = { error: \"无法解析 JPEG 尺寸\" };\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 730,
+        "y": 40,
+        "wires": [
+            [
+                "5ab02b1b4c2ba758"
+            ]
+        ]
+    },
+    {
+        "id": "5ab02b1b4c2ba758",
+        "type": "debug",
+        "z": "face_access_main_flow",
+        "name": "debug 3",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 960,
+        "y": 40,
+        "wires": []
+    },
+    {
         "id": "mqtt_broker",
         "type": "mqtt-broker",
         "name": "Face Access MQTT Broker",
@@ -1963,6 +2070,7 @@
         "willRetain": "false",
         "willPayload": "",
         "willMsg": {},
+        "userProps": "",
         "sessionExpiry": ""
     }
 ]
