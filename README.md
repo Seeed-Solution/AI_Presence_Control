@@ -7,24 +7,38 @@ For detailed development documentation, API specifications, and contribution gui
 ## ✅ Verified Distributed System Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Grove Vision AI │───→│   MQTT Broker   │───→│    Node-RED     │
-│      V2         │    │   (Main Server) │    │   (Main Server) │
-│   (Multiple)    │    │                 │    │  ┌─────────────┐ │
-└─────────────────┘    └─────────────────┘    │  │ Configuration │ │
-                                              │  │ is managed in │ │
-                                              │  │ Node-RED      │ │
-                                              └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌──────────────────┐
+│ Grove Vision AI │───→│   MQTT Broker   │───→│    Node-RED      │
+│      V2         │    │   (Main Server) │    │   (Main Server)  │
+│   (Multiple)    │    │                 │    │ ┌──────────────┐ │
+└─────────────────┘    └─────────────────┘    │ │ Configuration│ │
+                                              │ │ is managed in│ │
+                                              │ │ Node-RED     │ │
+                                              └──────────────────┘
                                                          │
                                                          ▼ HTTP API
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │  FaceEmbed API  │◀───│     Qdrant      │◀───│  Vector Search  │
 │ ✅ Verified     │    │   (Main Server) │    │                 │
-│  192.168.10.179 │    │                 │    │                 │
-│  3-18ms Inference│   │                 │    │                 │
-│  28 Tests Passed│    │                 │    │                 │
+│ 192.168.xx.xxx  │    │                 │    │                 │
+│ 3-18ms Inference│    │                 │    │                 │
+│ 28 Tests Passed │    │                 │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
+
+## Node-RED Flow Showcase
+
+The core business logic of this project is orchestrated within Node-RED. The following flow demonstrates how face recognition events are processed, from image capture to final access control decisions.
+
+**Node-RED Flow Diagram:**
+
+![Node-RED Flow](assets/node_red_flow.png)
+
+**Live Demo in Home Assistant:**
+
+This GIF shows the end-to-end user experience within Home Assistant, where a successful face recognition event grants temporary access.
+
+![Feature Showcase](assets/Feature_showcase.gif)
 
 ## ✨ Core Features
 
@@ -146,20 +160,6 @@ DEVICE_ID="grove_vision_ai_v2_001"
   - **No-Code Integration**: Implemented entirely with native HA Blueprints and Timers.
   - **Real-Time UI**: Provides a Lovelace dashboard example to monitor the remaining time.
   - **Admin Control**: Allows administrators to manually add time, pause, or stop the timer.
-
-## Node-RED Flow Showcase
-
-The core business logic of this project is orchestrated within Node-RED. The following flow demonstrates how face recognition events are processed, from image capture to final access control decisions.
-
-**Node-RED Flow Diagram:**
-
-![Node-RED Flow](assets/node_red_flow.png)
-
-**Live Demo in Home Assistant:**
-
-This GIF shows the end-to-end user experience within Home Assistant, where a successful face recognition event grants temporary access.
-
-![Feature Showcase](assets/Feature%20showcase.gif)
 
 ## Troubleshooting
 
