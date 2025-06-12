@@ -26,21 +26,14 @@ For detailed development documentation, API specifications, and contribution gui
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## Node-RED Flow Showcase
 
-The core business logic of this project is orchestrated within Node-RED. The following flow demonstrates how face recognition events are processed, from image capture to final access control decisions.
-
-**Node-RED Flow Diagram:**
-
-![Node-RED Flow](assets/node_red_flow.png)
-
-**Live Demo in Home Assistant:**
-
-This GIF shows the end-to-end user experience within Home Assistant, where a successful face recognition event grants temporary access.
+## Quicklook & Showcase
 
 | Node-RED Flow | Live Demo in Home Assistant |
-| :---: | :---: |
-| ![Node-RED Flow](assets/node_red_flow.png) | ![Feature Showcase](assets/Feature%20showcase.gif) |
+|---------------|-----------------------------|
+| The core business logic of this project is orchestrated within Node-RED. The following flow demonstrates how face recognition events are processed, from image capture to final access control decisions. | This GIF shows the end-to-end user experience within Home Assistant, where a successful face recognition event grants temporary access. |
+| <img src="assets/node_red_flow.png" width="60%"> | <img src="assets/Feature_showcase.gif" width="100%"> |
+
 
 ## ✨ Core Features
 
