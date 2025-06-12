@@ -38,7 +38,9 @@ The core business logic of this project is orchestrated within Node-RED. The fol
 
 This GIF shows the end-to-end user experience within Home Assistant, where a successful face recognition event grants temporary access.
 
-![Feature Showcase](assets/Feature_showcase.gif)
+| Node-RED Flow | Live Demo in Home Assistant |
+| :---: | :---: |
+| ![Node-RED Flow](assets/node_red_flow.png) | ![Feature Showcase](assets/Feature%20showcase.gif) |
 
 ## ✨ Core Features
 
