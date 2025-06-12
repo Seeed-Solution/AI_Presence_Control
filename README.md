@@ -147,6 +147,20 @@ DEVICE_ID="grove_vision_ai_v2_001"
   - **Real-Time UI**: Provides a Lovelace dashboard example to monitor the remaining time.
   - **Admin Control**: Allows administrators to manually add time, pause, or stop the timer.
 
+## Node-RED Flow Showcase
+
+The core business logic of this project is orchestrated within Node-RED. The following flow demonstrates how face recognition events are processed, from image capture to final access control decisions.
+
+**Node-RED Flow Diagram:**
+
+![Node-RED Flow](assets/node_red_flow.png)
+
+**Live Demo in Home Assistant:**
+
+This GIF shows the end-to-end user experience within Home Assistant, where a successful face recognition event grants temporary access.
+
+![Feature Showcase](assets/Feature%20showcase.gif)
+
 ## Troubleshooting
 
 ### Face recognition is not accurate (too strict or too loose)
