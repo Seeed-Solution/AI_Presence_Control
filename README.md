@@ -102,7 +102,7 @@ You can download both models from the official **Hailo Model Zoo**:
 ```bash
 # Clone the project
 git clone <repository_url>
-cd face_rec_r2000
+cd AI_Presence_Control
 
 # Start the main server services (without FaceEmbed API)
 ./deployment/start_services.sh --with-nodered
