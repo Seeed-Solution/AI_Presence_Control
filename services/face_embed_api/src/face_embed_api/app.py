@@ -101,7 +101,8 @@ class FaceEmbedService:
         # Debug image saving settings from environment variables
         self.debug_save_images = os.getenv('DEBUG_SAVE_IMAGES', 'false').lower() in ('true', '1', 't')
         self.debug_save_interval_s = int(os.getenv('DEBUG_SAVE_INTERVAL_S', '10'))
-        self.last_save_time = 0
+        self.last_embed_save_time = 0
+        self.last_detect_save_time = 0
         self.debug_image_dir = "debug_images"
         if self.debug_save_images:
             os.makedirs(self.debug_image_dir, exist_ok=True)
@@ -132,6 +133,7 @@ class FaceEmbedService:
         self.rec_input_queue = queue.Queue(maxsize=20)
         self.rec_output_queue = queue.Queue(maxsize=20)
         self.det_quant_infos = {} # To store dequantization parameters
+        self.rec_quant_infos = {} # To store dequantization parameters for recognition model
         self.det_thread = None
         self.rec_thread = None
         self._initialize_hailo_device()
@@ -161,6 +163,17 @@ class FaceEmbedService:
             logger.info(f"Loading recognition model: {self.face_recognition_hef}")
             self.rec_infer_model = self.target.create_infer_model(self.face_recognition_hef)
 
+            # --- Extract and store quantization parameters for the recognition model ---
+            rec_vstream_infos = self.rec_infer_model.hef.get_output_vstream_infos()
+            self.rec_quant_infos = {
+                info.name: (info.quant_info.qp_scale, info.quant_info.qp_zp)
+                for info in rec_vstream_infos
+            }
+            logger.info("--- Recognition Model Quantization Info ---")
+            for name, params in self.rec_quant_infos.items():
+                logger.info(f"Layer: {name}, Scale: {params[0]:.4f}, Zero-Point: {params[1]}")
+            logger.info("-------------------------------------------")
+
             # Start inference threads for each model
             self.det_thread = threading.Thread(
                 target=self._run_inference_loop, 
@@ -185,9 +198,17 @@ class FaceEmbedService:
         Generic inference loop for a given model.
         This function runs in a dedicated thread for each model.
         """
+        # Using a list as a mutable container to pass the exception from the callback
+        # thread back to this inference thread. This avoids using 'user_data' which
+        # is not supported in all hailort versions.
+        callback_exception_container = [None]
+
         def inference_callback(completion_info):
+            # This callback is executed in a different thread context by the HailoRT driver.
+            # We cannot raise from here, so we store the exception in the container.
             if completion_info.exception:
-                logger.error(f"[{name}] Async inference error: {completion_info.exception}")
+                callback_exception_container[0] = completion_info.exception
+                logger.error(f"[{name}] Async inference error in callback: {completion_info.exception}")
 
         with infer_model.configure() as configured_model:
             while True:
@@ -197,6 +218,8 @@ class FaceEmbedService:
                     break
                 
                 original_frame, preprocessed_frame = batch_data
+                # Reset exception from previous run before new inference
+                callback_exception_container[0] = None
 
                 try:
                     # Explicitly create output buffers with the correct dtype
@@ -204,12 +227,28 @@ class FaceEmbedService:
                         info.name: np.empty(info.shape, dtype=np.uint8)
                         for info in infer_model.outputs
                     }
+
+                    # --- CRITICAL FIX ---
+                    # Zero out the output buffers before inference. This is crucial because
+                    # if the async job fails silently without raising an exception, we prevent
+                    # returning stale data from a previous inference run. Returning a zero
+                    # vector is a safe failure mode.
+                    for buf in output_buffers.values():
+                        buf.fill(0)
+
                     bindings = configured_model.create_bindings(output_buffers=output_buffers)
                     bindings.input().set_buffer(preprocessed_frame)
                     
                     configured_model.wait_for_async_ready(timeout_ms=10000)
-                    job = configured_model.run_async([bindings], inference_callback)
+                    job = configured_model.run_async(
+                        [bindings], 
+                        callback=inference_callback
+                    )
                     job.wait(10000)
+
+                    # After job completion, check if the callback caught an exception
+                    if callback_exception_container[0]:
+                        raise RuntimeError("Async inference failed.") from callback_exception_container[0]
 
                     # For multi-output models, return a dict. For single, the raw array.
                     if len(output_buffers) == 1:
@@ -347,24 +386,28 @@ class FaceEmbedService:
         model_shape = self.rec_infer_model.input().shape
         preprocessed_face = self._preprocess_face_for_hailo(face_image, model_shape)
         
+        # ArcFace models typically expect RGB input, but OpenCV uses BGR. Convert before inference.
+        preprocessed_face_rgb = cv2.cvtColor(preprocessed_face, cv2.COLOR_BGR2RGB)
+
         # DEBUG: Conditionally save preprocessed image for embedding
         if self.debug_save_images:
             current_time = time.time()
-            if (current_time - self.last_save_time) > self.debug_save_interval_s:
+            if (current_time - self.last_embed_save_time) > self.debug_save_interval_s:
                 try:
                     prefix = "aligned" if is_aligned else "cropped"
                     filename = os.path.join(
                         self.debug_image_dir, 
                         f"{prefix}_for_embedding_{int(current_time)}_{confidence:.2f}.jpg"
                     )
+                    # We save the BGR image (`preprocessed_face`) for correct viewing in standard image viewers.
                     cv2.imwrite(filename, preprocessed_face)
                     logger.info(f"Saved debug image for embedding to {filename}")
-                    self.last_save_time = current_time
+                    self.last_embed_save_time = current_time
                 except Exception as e:
                     logger.error(f"Failed to save embedding debug image: {e}")
         
         # 发送到推理队列
-        self.rec_input_queue.put((face_image, preprocessed_face))
+        self.rec_input_queue.put((face_image, preprocessed_face_rgb))
         
         # 获取推理结果
         try:
@@ -374,18 +417,25 @@ class FaceEmbedService:
             
             # 处理结果，转换为512维向量
             if isinstance(result, dict):
-                # 多输出情况，选择第一个输出
-                embedding = list(result.values())[0]
+                embedding_raw = list(result.values())[0]
+                output_layer_name = list(result.keys())[0]
             else:
-                # 单输出情况
-                embedding = result
+                embedding_raw = result
+                # This case is less likely with named outputs, but as a fallback
+                output_layer_name = list(self.rec_quant_infos.keys())[0]
             
             # 确保是numpy数组
-            if not isinstance(embedding, np.ndarray):
-                embedding = np.array(embedding)
+            if not isinstance(embedding_raw, np.ndarray):
+                embedding_raw = np.array(embedding_raw)
             
             # 展平到1维
-            embedding = embedding.flatten()
+            embedding_raw = embedding_raw.flatten()
+            
+            # --- DEQUANTIZATION ---
+            # This is the most critical step. We must dequantize the raw integer output
+            # from the model to get the actual floating-point feature vector.
+            scale, zp = self.rec_quant_infos.get(output_layer_name, (1.0, 0.0))
+            embedding = (embedding_raw.astype(np.float32) - zp) * scale
             
             # 如果不是512维，进行填充或截断
             if len(embedding) != 512:
@@ -401,7 +451,7 @@ class FaceEmbedService:
             if norm > 0:
                 embedding = embedding / norm
             
-            return embedding.astype(np.float32)
+            return embedding
             
         except queue.Empty:
             raise RuntimeError("Hailo inference timeout after 15 seconds")
@@ -768,27 +818,29 @@ class FaceEmbedService:
                 
                 # --- Debug: Save image with detected faces ---
                 if self.debug_save_images and faces:
-                    try:
-                        # Draw bounding boxes on the original image
-                        image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                    current_time = time.time()
+                    if (current_time - self.last_detect_save_time) > self.debug_save_interval_s:
+                        try:
+                            # Draw bounding boxes on the original image
+                            image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-                        for face in faces:
-                            bbox = face.bbox
-                            p1 = (bbox.x, bbox.y)
-                            p2 = (bbox.x + bbox.w, bbox.y + bbox.h)
-                            cv2.rectangle(image_bgr, p1, p2, (0, 255, 0), 2)
-                            
-                            if hasattr(face, "landmarks") and face.landmarks is not None:
-                                for landmark in face.landmarks:
-                                    cv2.circle(image_bgr, (int(landmark.x), int(landmark.y)), 2, (0, 0, 255), -1)
+                            for face in faces:
+                                bbox = face.bbox
+                                p1 = (bbox.x, bbox.y)
+                                p2 = (bbox.x + bbox.w, bbox.y + bbox.h)
+                                cv2.rectangle(image_bgr, p1, p2, (0, 255, 0), 2)
+                                
+                                if hasattr(face, "landmarks") and face.landmarks is not None:
+                                    for landmark in face.landmarks:
+                                        cv2.circle(image_bgr, (int(landmark.x), int(landmark.y)), 2, (0, 0, 255), -1)
                         
-                        # Save the image
-                        timestamp = int(time.time())
-                        filename = os.path.join(self.debug_image_dir, f"detected_{timestamp}_{len(faces)}_faces.jpg")
-                        cv2.imwrite(filename, image_bgr)
-                        logger.info(f"Saved debug image with {len(faces)} detections to {filename}")
-                    except Exception as e:
-                        logger.error(f"Failed to save debug image: {e}")
+                            # Save the image
+                            filename = os.path.join(self.debug_image_dir, f"detected_{int(current_time)}_{len(faces)}_faces.jpg")
+                            cv2.imwrite(filename, image_bgr)
+                            logger.info(f"Saved debug image with {len(faces)} detections to {filename}")
+                            self.last_detect_save_time = current_time # Update last save time
+                        except Exception as e:
+                            logger.error(f"Failed to save debug image: {e}")
 
                 processing_time = int((time.time() - start_time) * 1000)
                 
@@ -891,15 +943,24 @@ class FaceEmbedService:
         
         logger.info("Inference threads stopped.")
 
-# Global service instance - will be initialized lazily
-face_embed_service = None
+# --- LAZY LOADING FIX ---
+# The global service instance. We use a list to make it a mutable global
+# that can be modified by the get_face_embed_service function.
+face_embed_service_container = [None]
 
 def get_face_embed_service():
-    """Get or create face embed service instance"""
-    global face_embed_service
-    if face_embed_service is None:
-        face_embed_service = FaceEmbedService()
-    return face_embed_service
+    """
+    Get or create the FaceEmbedService instance.
+    This function ensures that the service is initialized lazily, meaning it's
+    created within the Uvicorn worker process itself, not in the main process
+    that gets copied. This is the key to fixing the issue where code changes
+    were not being reflected in the running workers.
+    """
+    if face_embed_service_container[0] is None:
+        logger.info("Initializing FaceEmbedService for this worker process...")
+        face_embed_service_container[0] = FaceEmbedService()
+        logger.info("FaceEmbedService initialized.")
+    return face_embed_service_container[0]
 
 # FastAPI app with optimized settings for concurrent access
 app = FastAPI(
