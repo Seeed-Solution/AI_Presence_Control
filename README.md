@@ -114,15 +114,16 @@ cd AI_Presence_Control
 
 #### 2. Deploy on Hailo Device ✅ **Verified**
 
-**Important**: Based on actual validation, the FaceEmbed API is not suitable for Docker deployment and must be run natively to access the Hailo hardware directly.
+**Important**: You should finish install hailo related dependency first （Refer to the [Hailo Setup Guide](docs/HAILO_SETUP.md) for detailed instructions.）
 
 ```bash
 # On the Hailo device (Eg. 192.168.10.179) - Deployment and testing complete
 ssh user@your_hailo_device_ip
 
 # Start the FaceEmbed API service (verified)
-cd ~/face_embed_api
+cd ~/face_embed_api/services/face_embed_api
 source .venv/bin/activate
+
 PYTHONPATH=src uvicorn app:app --host 0.0.0.0 --port 8000
 
 
@@ -135,10 +136,6 @@ curl http://your_hailo_device_ip:8000/health
 # Inference Performance: 3-18ms, 512-dim vector, L2 normalized
 ```
 
-or directly (if you have uv installed)
-```bash
-PYTHONPATH=src uv run uvicorn app:app --host 0.0.0.0 --port 8000
-```
 
 #### 3. Configure Grove Vision AI V2
 
