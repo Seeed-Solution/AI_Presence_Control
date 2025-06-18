@@ -5,10 +5,9 @@
 ```
 face_embed_api/
 ├── 📂 src/                              # Source Code Directory
-│   └── face_embed_api/                  # Main API Package
-│       ├── __init__.py                  # Package Initializer
-│       ├── app.py                       # FastAPI Application Main File
-│       └── utils.py                     # Hailo Inference Utility Classes
+│   ├── __init__.py                      # Package Initializer
+│   ├── app.py                           # FastAPI Application Main File
+│   └── utils.py                         # Hailo Inference Utility Classes
 │
 ├── 📂 tests/                            # Tests Directory
 │   ├── __init__.py                      # Tests Package Initializer
@@ -56,7 +55,7 @@ face_embed_api/
 ```bash
 # Set PYTHONPATH and start with uvicorn
 source .venv/bin/activate
-PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000
+PYTHONPATH=src uv run uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
 ### 2. Run Tests
@@ -69,9 +68,9 @@ uv run -- pytest -v
 ## 📋 File Descriptions
 
 ### Core Source Code
-- **`src/face_embed_api/app.py`**: The main FastAPI application, containing all API endpoints.
-- **`src/face_embed_api/utils.py`**: Hailo asynchronous inference utility classes.
-- **`src/face_embed_api/__init__.py`**: Package import configurations.
+- **`src/app.py`**: The main FastAPI application, containing all API endpoints.
+- **`src/utils.py`**: Hailo asynchronous inference utility classes.
+- **`src/`**: The root of the core application source code.
 
 ### Test Files
 - **`tests/unit/test_face_embed_api.py`**: Unit tests for individual functional modules.
@@ -89,7 +88,7 @@ uv run -- pytest -v
 ## 🔧 Development Workflow
 
 ### Adding New Features
-1. Implement the feature in `src/face_embed_api/`.
+1. Implement the feature in `src/`.
 2. Add unit tests in `tests/unit/`.
 3. Add integration tests in `tests/integration/`.
 4. Run tests to ensure they pass.
@@ -97,7 +96,7 @@ uv run -- pytest -v
 
 ### Deployment Preparation
 1. Run the full test suite: `uv run -- pytest -v`
-2. Start the service: `PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000`
+2. Start the service: `PYTHONPATH=src uv run uvicorn app:app --host 0.0.0.0 --port 8000`
 
 ## 📊 Test Coverage
 

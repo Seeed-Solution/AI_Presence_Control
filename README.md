@@ -123,7 +123,8 @@ ssh user@your_hailo_device_ip
 # Start the FaceEmbed API service (verified)
 cd ~/face_embed_api
 source .venv/bin/activate
-python src/face_embed_api/app.py
+PYTHONPATH=src uvicorn app:app --host 0.0.0.0 --port 8000
+
 
 # Verify service status
 curl http://your_hailo_device_ip:8000/health
@@ -132,6 +133,11 @@ curl http://your_hailo_device_ip:8000/health
 # API Address: http://your_hailo_device_ip:8000
 # Test Status: 28/28 tests passed (100%)
 # Inference Performance: 3-18ms, 512-dim vector, L2 normalized
+```
+
+or directly (if you have uv installed)
+```bash
+PYTHONPATH=src uv run uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
 #### 3. Configure Grove Vision AI V2

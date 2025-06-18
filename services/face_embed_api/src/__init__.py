@@ -8,8 +8,8 @@ __version__ = "1.0.0"
 __author__ = "FaceEmbed Team"
 __email__ = "support@faceembed.ai"
 
-from .app import app, FaceEmbedService
-from .utils import HailoAsyncInference
+from app import app, FaceEmbedService
+from utils import HailoAsyncInference
 
 __all__ = [
     "app",

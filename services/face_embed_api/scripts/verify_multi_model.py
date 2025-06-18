@@ -19,18 +19,18 @@ import numpy as np
 import time
 
 # Adjust the path to import from the project's `src` folder
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 try:
     from hailo_platform import (HEF, VDevice, HailoSchedulingAlgorithm, InferVStreams)
-    from src.face_embed_api.utils import HailoAsyncInference
+    from src.utils import HailoAsyncInference
 except (ImportError, ModuleNotFoundError) as e:
     print(f"Error: Failed to import Hailo modules. {e}")
     print("Please ensure HailoRT is installed and the environment is set up correctly.")
     sys.exit(1)
 
 # --- Configuration ---
-RECOGNITION_HEF = os.path.join(os.path.dirname(__file__), '..', 'models/arcface_mobilefacenet.hef')
+RECOGNITION_HEF = os.path.join(os.path.dirname(__file__), '..', 'models', 'arcface_mobilefacenet.hef')
 DETECTION_HEF = os.path.join(os.path.dirname(__file__), '..', 'models/scrfd_10g.hef')
 
 def check_files():

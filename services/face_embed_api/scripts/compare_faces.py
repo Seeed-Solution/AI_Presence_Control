@@ -21,9 +21,13 @@ import cv2
 import numpy as np
 
 # Adjust the path to import from the parent directory's `src` folder
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from src.face_embed_api.utils import HailoAsyncInference
+try:
+    from src.utils import HailoAsyncInference
+except ImportError as e:
+    print(f"Error: {e}")
+    print("Please ensure that the `src` directory is in your PYTHONPATH.")
 
 # --- Configuration ---
 MODEL_PATH = os.getenv(

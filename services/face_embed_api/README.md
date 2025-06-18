@@ -15,7 +15,7 @@ A high-performance face feature extraction service based on the Hailo-8 AI accel
 
 ```
 face_embed_api/
-├── 📂 src/face_embed_api/          # Core source code
+├── 📂 src/                         # Core source code
 │   ├── app.py                      # FastAPI application
 │   └── utils.py                    # Hailo inference utilities
 │   └── __init__.py                 # Package initializer
@@ -62,7 +62,7 @@ uv sync
 
 ```bash
 # Set PYTHONPATH and start with uvicorn (recommended)
-PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000
+PYTHONPATH=src uv run uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
 ### 4. Verify the Service
@@ -188,7 +188,7 @@ export DEBUG_SAVE_IMAGES=true
 export DEBUG_SAVE_INTERVAL_S=5 # Save one image at most every 5 seconds to prevent disk flooding
 
 # Then start the service
-PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000
+PYTHONPATH=src uv run uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
 ### Debug Environment Variables
@@ -209,7 +209,7 @@ Filenames include timestamps and confidence scores for easy tracking.
 ## 🔧 Development
 
 ### Adding New Features
-1. Implement the feature in `src/face_embed_api/`.
+1. Implement the feature in `src/`.
 2. Add unit tests in `tests/unit/`.
 3. Add integration tests in `tests/integration/`.
 4. Run tests to ensure they pass.
@@ -285,7 +285,7 @@ return msg;
 ### Production Environment
 ```bash
 # Start the service
-PYTHONPATH=src uv run uvicorn face_embed_api.app:app --host 0.0.0.0 --port 8000
+PYTHONPATH=src uv run uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
 ### Environment Variables

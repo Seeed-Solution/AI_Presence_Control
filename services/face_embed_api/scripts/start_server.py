@@ -9,7 +9,7 @@ import sys
 # 添加src目录到Python路径
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src'))
 
-from face_embed_api.app import app
+from app import app
 import uvicorn
 
 if __name__ == "__main__":

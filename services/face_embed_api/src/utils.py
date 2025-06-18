@@ -248,39 +248,51 @@ def load_input_images(images_path: str):
         images_path (str): Path to the input image or directory of images.
 
     Returns:
-        List[Image.Image]: List of PIL.Image.Image objects.
+        A generator that yields a list of NumPy arrays (images) for each 
+        valid image found.
     """
-    from PIL import Image
     path = Path(images_path)
-    if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS:
-        return [Image.open(path)]
+    if path.is_file():
+        if path.suffix.lower() in IMAGE_EXTENSIONS:
+            logger.info(f"Loading single image: {path}")
+            yield [load_images_opencv(str(path))]
     elif path.is_dir():
-        return [
-            Image.open(img) for img in path.glob("*") 
-            if img.suffix.lower() in IMAGE_EXTENSIONS
+        logger.info(f"Loading all images in directory: {path}")
+        image_files = [
+            f for f in path.glob("*")
+            if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS
         ]
-    return []
+        if not image_files:
+            logger.warning("No valid images found in directory.")
+            return
+
+        for image_path in image_files:
+            yield [load_images_opencv(str(image_path))]
+    else:
+        logger.error(
+            f"The provided path is not a valid file or directory: {images_path}"
+        )
+
 
 def validate_images(images: List[np.ndarray], batch_size: int) -> None:
     """
-    Validate that images exist and are properly divisible by the batch size.
+    Validate the loaded images.
 
     Args:
-        images (List[np.ndarray]): List of images.
-        batch_size (int): Number of images per batch.
+        images (List[np.ndarray]): List of images as NumPy arrays.
+        batch_size (int): Batch size for inference.
 
     Raises:
-        ValueError: If images list is empty or not divisible by batch size.
+        ValueError: If no images are found or if the number of images is not
+                    a multiple of the batch size.
     """
     if not images:
         raise ValueError(
-            'No valid images found in the specified path.'
+            "No images found. Please check the path and file extensions."
         )
-    
     if len(images) % batch_size != 0:
         raise ValueError(
-            'The number of input images should be divisible by the batch size '
-            'without any remainder.'
+            "The number of images must be a multiple of the batch size."
         )
 
 
@@ -288,15 +300,15 @@ def divide_list_to_batches(
     images_list: List[np.ndarray], batch_size: int
 ) -> Generator[List[np.ndarray], None, None]:
     """
-    Divide the list of images into batches.
+    Divide a list of images into batches.
 
     Args:
-        images_list (List[np.ndarray]): List of images.
-        batch_size (int): Number of images in each batch.
+        images_list (List[np.ndarray]): List of images to be divided.
+        batch_size (int): The size of each batch.
 
     Returns:
-        Generator[List[np.ndarray], None, None]: Generator yielding batches 
-                                                  of images.
+        Generator[List[np.ndarray], None, None]: A generator that yields
+                                                 batches of images.
     """
     for i in range(0, len(images_list), batch_size):
-        yield images_list[i: i + batch_size]
+        yield images_list[i: i + batch_size] 
