@@ -111,11 +111,11 @@ class FaceEmbedService:
         # Model paths
         self.face_recognition_hef = os.getenv(
             'FACE_RECOGNITION_HEF', 
-            '/home/harvest/face_embed_api/models/arcface_mobilefacenet.hef'
+            os.path.join(os.path.dirname(__file__), '..', 'models', 'arcface_mobilefacenet.hef')
         )
         self.face_detection_hef = os.getenv(
             'FACE_DETECTION_HEF',
-            '/home/harvest/face_embed_api/models/scrfd_10g.hef'
+            os.path.join(os.path.dirname(__file__), '..', 'models', 'scrfd_10g.hef')
         )
         
         # Pre-check that model files exist to fail early
