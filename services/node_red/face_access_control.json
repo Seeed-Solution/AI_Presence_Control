@@ -1270,7 +1270,7 @@
         "type": "function",
         "z": "face_access_main_flow",
         "name": "Global Config",
-        "func": "// --- Global Config ---\n// Set all external service addresses and parameters here\n// This node will run automatically once on startup\n\n// Qdrant Vector Database Configuration\nflow.set('qdrant_host', 'localhost');\nflow.set('qdrant_port', '6333');\nflow.set('qdrant_api_key', 'face_access_2025');\n\n// Hailo AI Chip (Face Vector API) Configuration\nflow.set('hailo_host', '192.168.10.179');\nflow.set('hailo_port', '8000');\n\n// Grove Vision AI Camera Configuration\nflow.set('image_width', 640);\nflow.set('image_height', 480);\n\n// Grove Vision AI Resolution Configuration (AT+RSL=<width>,<height>)\n// For supported resolutions, please refer to the device documentation, e.g., '240,240' or '480,480'\n// Reference: https://github.com/Seeed-Studio/SSCMA-Micro/blob/main/docs/protocol/at-protocol-en_US.md\nflow.set('resolution', '640,480');\n\nnode.log(\"Global configuration loaded.\");\n\nreturn msg;",
+        "func": "// --- Global Config ---\n// Set all external service addresses and parameters here\n// This node will run automatically once on startup\n\n// Hailo AI Chip (Face Vector API) Configuration\nflow.set('hailo_host', '192.168.10.179');\nflow.set('hailo_port', '8000');\n\n// Grove Vision AI Camera Configuration\nflow.set('image_width', 640);\nflow.set('image_height', 480);\n\n// Grove Vision AI Resolution Configuration (AT+RSL=<width>,<height>)\n// For supported resolutions, please refer to the device documentation, e.g., '240,240' or '480,480'\n// Reference: https://github.com/Seeed-Studio/SSCMA-Micro/blob/main/docs/protocol/at-protocol-en_US.md\nflow.set('resolution', '640,480');\n\nnode.log(\"Global configuration loaded.\");\n\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -1345,7 +1345,7 @@
         "type": "function",
         "z": "face_access_main_flow",
         "name": "Prepare Vector Search",
-        "func": "// Get face vector\nconst embedding = msg.payload.vector;\nconst confidence = msg.payload.confidence;\nconst processingTime = msg.payload.processing_time_ms;\n\n// Check vector quality\nif (confidence < 0.5) {\n    node.warn(`Low face quality: ${confidence}`);\n    return null;\n}\n\n// Device to Collection mapping - add new devices here\nconst deviceCollectionMap = {\n    'grove_vision_ai_v2_eb9e4d18': 'office_entrance',\n    'grove_vision_ai_v2_002': 'warehouse_door',\n    'grove_vision_ai_v2_003': 'lab_access',\n    'default': 'default_faces'\n};\n\n// Get device configuration\nconst deviceId = msg.deviceId;\nconst collectionName = deviceCollectionMap[deviceId] || deviceCollectionMap['default'];\nconst threshold = 0.32;  // Similarity threshold, adjustable here\n\n// Prepare Qdrant search request\nmsg.collectionName = collectionName;\nmsg.threshold = threshold;\nmsg.embedding = embedding;\nmsg.confidence = confidence;\nmsg.processingTime = processingTime;\n\n// Get Qdrant configuration from flow context\nconst qdrantHost = flow.get('qdrant_host') || 'localhost';\nconst qdrantPort = flow.get('qdrant_port') || '6333';\nmsg.url = `http://${qdrantHost}:${qdrantPort}/collections/${collectionName}/points/search`;\n\nmsg.payload = {\n    vector: embedding,\n    limit: 3,\n    with_payload: true,\n    score_threshold: 1 - threshold  // Qdrant uses cosine similarity, so the threshold needs to be converted\n};\n\n// Set HTTP headers\nconst qdrantApiKey = flow.get('qdrant_api_key');\nmsg.headers = { 'Content-Type': 'application/json' };\nif (qdrantApiKey) {\n    msg.headers['api-key'] = qdrantApiKey;\n}\n\nreturn msg;",
+        "func": "// Get face vector\nconst embedding = msg.payload.vector;\nconst confidence = msg.payload.confidence;\nconst processingTime = msg.payload.processing_time_ms;\n\n// Check vector quality\nif (confidence < 0.5) {\n    node.warn(`Low face quality: ${confidence}`);\n    return null;\n}\n\n// Device to Collection mapping - add new devices here\nconst deviceCollectionMap = {\n    'grove_vision_ai_v2_eb9e4d18': 'office_entrance',\n    'grove_vision_ai_v2_002': 'warehouse_door',\n    'grove_vision_ai_v2_003': 'lab_access',\n    'default': 'default_faces'\n};\n\n// Get device configuration\nconst deviceId = msg.deviceId;\nconst collectionName = deviceCollectionMap[deviceId] || deviceCollectionMap['default'];\nconst threshold = 0.32;  // Similarity threshold, adjustable here\n\n// Prepare FaceEmbed API search request\nmsg.collectionName = collectionName;\nmsg.threshold = threshold;\nmsg.embedding = embedding;\nmsg.confidence = confidence;\nmsg.processingTime = processingTime;\n\n// Get Hailo API configuration from flow context\nconst hailoHost = flow.get('hailo_host') || '192.168.10.179';\nconst hailoPort = flow.get('hailo_port') || '8000';\nmsg.url = `http://${hailoHost}:${hailoPort}/vectors/search`;\n\nmsg.payload = {\n    collection: collectionName,\n    vector: embedding,\n    threshold: threshold,\n    top_k: 1\n};\n\n// Set HTTP headers\nmsg.headers = { 'Content-Type': 'application/json' };\n\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -1389,7 +1389,7 @@
         "type": "function",
         "z": "face_access_main_flow",
         "name": "Access Decision",
-        "func": "const searchResult = msg.payload.result;\nconst deviceId = msg.deviceId;\nconst threshold = msg.threshold;\nconst timestamp = new Date().toISOString();\n\nlet decision = false;\nlet name = null;\nlet distance = 1.0;\nlet matchedId = null;\n\n// Check search results\nif (searchResult && searchResult.length > 0) {\n    node.log(searchResult);\n    const bestMatch = searchResult[0];\n    distance = 1 - bestMatch.score;  // Convert to distance\n    \n    if (distance <= threshold) {\n        decision = true;\n        name = bestMatch.payload.name;\n        matchedId = bestMatch.id;\n    }\n}\n\n// Construct result message\nconst result = {\n    ts: timestamp,\n    device_id: deviceId,\n    decision: decision,\n    name: name,\n    distance: parseFloat(distance.toFixed(4)),\n    confidence: msg.confidence,\n    processing_time_ms: msg.processingTime,\n    matched_id: matchedId\n};\n\n// Prepare MQTT publish\nmsg.topic = `access/result/${deviceId}`;\nmsg.payload = result;\n\n// Save to context for logging\ncontext.set('lastAccess', result);\n\nreturn msg;",
+        "func": "const searchResponse = msg.payload;\nconst deviceId = msg.deviceId;\nconst threshold = msg.threshold;\nconst timestamp = new Date().toISOString();\n\nlet decision = false;\nlet name = null;\nlet similarity = 0.0;\nlet matchedId = null;\n\n// Check search results from our new API\nif (searchResponse && searchResponse.status === 'found' && searchResponse.results.length > 0) {\n    const bestMatch = searchResponse.results[0];\n    similarity = bestMatch.similarity;\n    \n    // The API already filters by threshold, but we can double-check if needed.\n    // The check is implicit now: if we have a result, it's a match.\n    decision = true;\n    name = bestMatch.user_id; // The user_id is the name\n    matchedId = bestMatch.id;\n    \n}\n\n// Construct result message\nconst result = {\n    ts: timestamp,\n    device_id: deviceId,\n    decision: decision,\n    name: name,\n    similarity: parseFloat(similarity.toFixed(4)),\n    confidence: msg.confidence,\n    processing_time_ms: msg.processingTime,\n    matched_id: matchedId\n};\n\n// Prepare MQTT publish\nmsg.topic = `access/result/${deviceId}`;\nmsg.payload = result;\n\n// Save to context for logging\ncontext.set('lastAccess', result);\n\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -1727,7 +1727,7 @@
         "type": "function",
         "z": "face_access_main_flow",
         "name": "Collect/Average/Store Vector",
-        "func": "const deviceId = msg.deviceId;\nconst enrollState = flow.get('enroll_' + deviceId);\n\nif (!enrollState || enrollState.status !== 'collecting') {\n    node.warn('Not in collecting state, ignoring vector.');\n    return null;\n}\n\n// 1. Collect vectors\nconst vector = msg.payload.vector;\nif (vector) {\n    enrollState.vectors.push(vector);\n}\nflow.set('enroll_' + deviceId, enrollState);\n\nconst collectedCount = enrollState.vectors.length;\nconst neededCount = 10;\n\n// 2. Send progress update\nconst statusUpdate = {\n    topic: `access/enroll_status/${deviceId}`,\n    payload: {\n        status: 'collecting',\n        message: `Collecting face data... (${collectedCount}/${neededCount})`,\n        collected: collectedCount,\n        needed: neededCount\n    }\n};\n\n// If not fully collected, just send progress and stop\nif (collectedCount < neededCount) {\n    return [statusUpdate, null];\n}\n\n// --- If collection is complete, start processing --- \nnode.log(`Collected ${neededCount} vectors for ${enrollState.name}. Averaging and preparing...`);\nenrollState.status = 'saving';\nflow.set('enroll_' + deviceId, enrollState);\n\n// 3. Calculate average vector\nconst vectors = enrollState.vectors;\nconst vectorDim = vectors[0].length;\nconst avgVector = new Array(vectorDim).fill(0);\n\nfor (const v of vectors) {\n    for (let i = 0; i < vectorDim; i++) {\n        avgVector[i] += v[i];\n    }\n}\nfor (let i = 0; i < vectorDim; i++) {\n    avgVector[i] /= vectors.length;\n}\n\n// 4. Prepare Qdrant Collection creation and Point upsert\nconst qdrantHost = flow.get('qdrant_host') || 'localhost';\nconst qdrantPort = flow.get('qdrant_port') || '6333';\nconst collectionName = enrollState.collection;\n\nif (!collectionName) {\n    node.error(`Enrollment for ${enrollState.name} failed: Collection name not found in context.`);\n    const errorMsg = {\n        topic: `access/enroll_status/${deviceId}`,\n        payload: { status: 'error', message: 'Enrollment failed: Target database (collection) not specified.' }\n    };\n    flow.set('enroll_' + deviceId, null); // Clean up state\n    return [errorMsg, null]; // Send error and stop\n}\n\n// Generate a random UUID as Point ID\nconst pointId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {\n    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n});\n\n// **Store enrollment data in the message for subsequent nodes to use**\nmsg.qdrantPoint = {\n    points: [\n        {\n            id: pointId,\n            vector: avgVector,\n            payload: { name: enrollState.name }\n        }\n    ]\n};\nmsg.collectionName = collectionName;\n// Inherit deviceId and other info\nconst qdrantChainMsg = { ...msg };\n\n// **Prepare request to create Collection**\nqdrantChainMsg.url = `http://${qdrantHost}:${qdrantPort}/collections/${collectionName}`;//Note there is no /points here\nqdrantChainMsg.method = 'PUT';\nqdrantChainMsg.payload = {\n    vectors: {\n        size: 512, // ArcFace model produces 512-d vectors\n        distance: \"Cosine\"\n    }\n};\n\n// Set HTTP headers\nconst qdrantApiKey = flow.get('qdrant_api_key');\nqdrantChainMsg.headers = { 'Content-Type': 'application/json' };\nif (qdrantApiKey) {\n    qdrantChainMsg.headers['api-key'] = qdrantApiKey;\n}\n\nconst finalStatusUpdate = {\n    topic: `access/enroll_status/${deviceId}`,\n    payload: {\n        status: 'saving',\n        message: 'Data collection complete, creating collection and saving to database...'\n    }\n};\n\n// Output 1: MQTT status update\n// Output 2: Qdrant create collection request\nreturn [finalStatusUpdate, qdrantChainMsg];",
+        "func": "const deviceId = msg.deviceId;\nconst enrollState = flow.get('enroll_' + deviceId);\n\nif (!enrollState || enrollState.status !== 'collecting') {\n    node.warn('Not in collecting state, ignoring vector.');\n    return null;\n}\n\n// 1. Collect vectors\nconst vector = msg.payload.vector;\nif (vector) {\n    enrollState.vectors.push(vector);\n}\nflow.set('enroll_' + deviceId, enrollState);\n\nconst collectedCount = enrollState.vectors.length;\nconst neededCount = 10;\n\n// 2. Send progress update\nconst statusUpdate = {\n    topic: `access/enroll_status/${deviceId}`,\n    payload: {\n        status: 'collecting',\n        message: `Collecting face data... (${collectedCount}/${neededCount})`,\n        collected: collectedCount,\n        needed: neededCount\n    }\n};\n\n// If not fully collected, just send progress and stop\nif (collectedCount < neededCount) {\n    return [statusUpdate, null];\n}\n\n// --- If collection is complete, start processing --- \nnode.log(`Collected ${neededCount} vectors for ${enrollState.name}. Averaging and preparing...`);\nenrollState.status = 'saving';\nflow.set('enroll_' + deviceId, enrollState);\n\n// 3. Calculate average vector\nconst vectors = enrollState.vectors;\nconst vectorDim = vectors[0].length;\nconst avgVector = new Array(vectorDim).fill(0);\n\nfor (const v of vectors) {\n    for (let i = 0; i < vectorDim; i++) {\n        avgVector[i] += v[i];\n    }\n}\nfor (let i = 0; i < vectorDim; i++) {\n    avgVector[i] /= vectors.length;\n}\n\n// 4. Prepare request for our new /vectors/add endpoint\nconst hailoHost = flow.get('hailo_host') || '192.168.10.179';\nconst hailoPort = flow.get('hailo_port') || '8000';\nconst collectionName = enrollState.collection;\n\nif (!collectionName) {\n    node.error(`Enrollment for ${enrollState.name} failed: Collection name not found in context.`);\n    const errorMsg = {\n        topic: `access/enroll_status/${deviceId}`,\n        payload: { status: 'error', message: 'Enrollment failed: Target database (collection) not specified.' }\n    };\n    flow.set('enroll_' + deviceId, null); // Clean up state\n    return [errorMsg, null]; // Send error and stop\n}\n\n// Prepare the message for the HTTP request node\nconst addVectorMsg = { ...msg }; // Inherit properties\naddVectorMsg.url = `http://${hailoHost}:${hailoPort}/vectors/add`;\naddVectorMsg.method = 'POST';\naddVectorMsg.headers = { 'Content-Type': 'application/json' };\naddVectorMsg.payload = {\n    collection: collectionName,\n    user_id: enrollState.name,\n    vector: avgVector\n};\n\nconst finalStatusUpdate = {\n    topic: `access/enroll_status/${deviceId}`,\n    payload: {\n        status: 'saving',\n        message: 'Data collection complete, saving to database...'\n    }\n};\n\n// Output 1: MQTT status update\n// Output 2: HTTP request to add vector\nreturn [finalStatusUpdate, addVectorMsg];",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
@@ -1741,50 +1741,6 @@
                 "enroll_status_publisher"
             ],
             [
-                "qdrant_create_collection"
-            ]
-        ]
-    },
-    {
-        "id": "qdrant_create_collection",
-        "type": "http request",
-        "z": "face_access_main_flow",
-        "name": "Qdrant Create Collection",
-        "method": "use",
-        "ret": "obj",
-        "paytoqs": "ignore",
-        "url": "",
-        "tls": "",
-        "persist": false,
-        "proxy": "",
-        "insecureHTTPParser": false,
-        "authType": "",
-        "senderr": false,
-        "headers": [],
-        "x": 1180,
-        "y": 400,
-        "wires": [
-            [
-                "prepare_qdrant_upsert"
-            ]
-        ]
-    },
-    {
-        "id": "prepare_qdrant_upsert",
-        "type": "function",
-        "z": "face_access_main_flow",
-        "name": "Prepare Qdrant Upsert",
-        "func": "const qdrantHost = flow.get('qdrant_host') || 'localhost';\nconst qdrantPort = flow.get('qdrant_port') || '6333';\n\n// Get enrollment data and collection name from the previous node's message\nconst pointPayload = msg.qdrantPoint;\nconst collectionName = msg.collectionName;\n\n// Check if the previous node (create collection) had an error\n// Qdrant's PUT /collections/{name} returns 200 OK on success or if it already exists\n// Therefore, any other status code indicates an issue to be aware of.\nif (msg.statusCode && msg.statusCode !== 200) {\n    node.error(`Failed to create or verify collection '${collectionName}'. Status: ${msg.statusCode}, Payload: ${JSON.stringify(msg.payload)}`);\n    // The error will be passed to the next node and handled by the 'Enrollment Final Status' node\n}\n\nmsg.url = `http://${qdrantHost}:${qdrantPort}/collections/${collectionName}/points?wait=true`;\nmsg.method = 'PUT';\nmsg.payload = pointPayload;\n\n// Set HTTP headers\nconst qdrantApiKey = flow.get('qdrant_api_key');\nmsg.headers = { 'Content-Type': 'application/json' };\nif (qdrantApiKey) {\n    msg.headers['api-key'] = qdrantApiKey;\n}\n\nreturn msg;",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1390,
-        "y": 400,
-        "wires": [
-            [
                 "qdrant_upsert"
             ]
         ]
@@ -1793,7 +1749,7 @@
         "id": "qdrant_upsert",
         "type": "http request",
         "z": "face_access_main_flow",
-        "name": "Qdrant Upsert",
+        "name": "Add Vector to DB",
         "method": "use",
         "ret": "obj",
         "paytoqs": "ignore",
@@ -1818,7 +1774,7 @@
         "type": "function",
         "z": "face_access_main_flow",
         "name": "Enrollment Final Status",
-        "func": "const deviceId = msg.deviceId;\nconst enrollState = flow.get('enroll_' + deviceId);\nlet finalMessage;\nif (msg.statusCode === 200 && msg.payload.status === 'ok') {\n    finalMessage = {\n        status: 'success',\n        message: `User ${enrollState.name} enrolled successfully!`\n    };\n    node.log(`Enrollment success for ${enrollState.name}.`);\n} else {\n    finalMessage = {\n        status: 'error',\n        message: `User ${enrollState.name} enrollment failed: ${msg.payload.status.error}`\n    };\n    node.error(`Enrollment failed: ${JSON.stringify(msg.payload)}`);\n}\n\n// Clean up context\nflow.set('enroll_' + deviceId, null);\n\nmsg.topic = `access/enroll_status/${deviceId}`;\nmsg.payload = finalMessage;\n\nreturn msg;",
+        "func": "const deviceId = msg.deviceId;\nconst enrollState = flow.get('enroll_' + deviceId);\nlet finalMessage;\n\n// Check the response from our /vectors/add endpoint\nif (msg.statusCode === 200 && msg.payload.status === 'success') {\n    finalMessage = {\n        status: 'success',\n        message: `User ${enrollState.name} enrolled successfully!`\n    };\n    node.log(`Enrollment success for ${enrollState.name}.`);\n} else {\n    const errorDetail = msg.payload.detail || JSON.stringify(msg.payload);\n    finalMessage = {\n        status: 'error',\n        message: `User ${enrollState.name} enrollment failed: ${errorDetail}`\n    };\n    node.error(`Enrollment failed: ${errorDetail}`);\n}\n\n// Clean up context\nflow.set('enroll_' + deviceId, null);\n\nmsg.topic = `access/enroll_status/${deviceId}`;\nmsg.payload = finalMessage;\n\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -1950,7 +1906,7 @@
         "type": "function",
         "z": "face_access_main_flow",
         "name": "Build Delete Request",
-        "func": "// Get collection and name from input\nconst collection = msg.payload.collection;\nconst nameToDelete = msg.payload.name;\n\nif (!collection || !nameToDelete) {\n    node.error(\"Delete failed: 'collection' and 'name' must be provided in the input\", msg);\n    return null;\n}\n\n// Get Qdrant configuration from flow context\nconst qdrantHost = flow.get('qdrant_host') || 'localhost';\nconst qdrantPort = flow.get('qdrant_port') || '6333';\n\n// Set API endpoint for Qdrant delete points\nmsg.url = `http://${qdrantHost}:${qdrantPort}/collections/${collection}/points/delete`;\n\n// Qdrant's delete operation is a POST request\nmsg.method = 'POST';\n\n// Build delete filter\nmsg.payload = {\n    \"filter\": {\n        \"must\": [\n            {\n                \"key\": \"name\",\n                \"match\": {\n                    \"value\": nameToDelete\n                }\n            }\n        ]\n    }\n};\n\n// Set HTTP headers\nconst qdrantApiKey = flow.get('qdrant_api_key');\nmsg.headers = { 'Content-Type': 'application/json' };\nif (qdrantApiKey) {\n    msg.headers['api-key'] = qdrantApiKey;\n}\n\nnode.log(`Preparing to delete data for name '${nameToDelete}' from collection '${collection}'`);\n\nreturn msg;",
+        "func": "// Get collection and name from input\nconst collection = msg.payload.collection;\nconst nameToDelete = msg.payload.name;\n\nif (!collection || !nameToDelete) {\n    node.error(\"Delete failed: 'collection' and 'name' must be provided in the input\", msg);\n    return null;\n}\n\n// Get Hailo API configuration from flow context\nconst hailoHost = flow.get('hailo_host') || '192.168.10.179';\nconst hailoPort = flow.get('hailo_port') || '8000';\n\n// Set API endpoint for our new delete endpoint\nmsg.url = `http://${hailoHost}:${hailoPort}/vectors/delete`;\n\n// This is a POST request\nmsg.method = 'POST';\n\n// Build the payload\nmsg.payload = {\n    collection: collection,\n    user_id: nameToDelete\n};\n\n// Set HTTP headers\nmsg.headers = { 'Content-Type': 'application/json' };\n\nnode.log(`Preparing to delete data for user '${nameToDelete}' from collection '${collection}'`);\n\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -1969,7 +1925,7 @@
         "id": "send_qdrant_delete",
         "type": "http request",
         "z": "face_access_main_flow",
-        "name": "Qdrant Delete",
+        "name": "Send Delete Request",
         "method": "use",
         "ret": "obj",
         "paytoqs": "ignore",

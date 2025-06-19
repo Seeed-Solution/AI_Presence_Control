@@ -8,8 +8,13 @@ __version__ = "1.0.0"
 __author__ = "FaceEmbed Team"
 __email__ = "support@faceembed.ai"
 
-from app import app, FaceEmbedService
+# Import key components to the top level
+from .app import app, FaceEmbedService
 from utils import HailoAsyncInference
+
+# Configure logging
+import logging
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 __all__ = [
     "app",

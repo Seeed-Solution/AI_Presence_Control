@@ -23,6 +23,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from skimage.transform import SimilarityTransform
 
+import database
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -80,6 +82,40 @@ class BatchEmbedResponse(BaseModel):
     vectors: List[List[float]] = Field(..., description="List of 512-D face embedding vectors")
     processing_times: List[int] = Field(..., description="Processing times in milliseconds")
 
+# --- New Models for Vector DB ---
+class AddVectorRequest(BaseModel):
+    collection: str = Field(..., description="Collection name to add the vector to")
+    user_id: str = Field(..., description="User ID associated with the vector")
+    vector: List[float] = Field(..., description="512-D face embedding vector")
+
+class AddVectorResponse(BaseModel):
+    status: str = "success"
+    id: int = Field(..., description="The unique ID of the stored vector")
+    message: str
+
+class SearchVectorRequest(BaseModel):
+    collection: str = Field(..., description="Collection name to search in")
+    vector: List[float] = Field(..., description="Query vector for similarity search")
+    threshold: Optional[float] = Field(0.32, description="Similarity threshold")
+    top_k: Optional[int] = Field(1, description="Number of top results to return")
+
+class SearchResultItem(BaseModel):
+    user_id: str
+    similarity: float
+    id: int
+
+class SearchVectorResponse(BaseModel):
+    status: str
+    results: List[SearchResultItem]
+
+class DeleteVectorRequest(BaseModel):
+    collection: str = Field(..., description="Collection to delete from")
+    user_id: str = Field(..., description="The user_id of the vectors to delete")
+
+class DeleteVectorResponse(BaseModel):
+    status: str
+    deleted_count: int
+
 class HealthResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
     
@@ -101,8 +137,7 @@ class FaceEmbedService:
         # Debug image saving settings from environment variables
         self.debug_save_images = os.getenv('DEBUG_SAVE_IMAGES', 'false').lower() in ('true', '1', 't')
         self.debug_save_interval_s = int(os.getenv('DEBUG_SAVE_INTERVAL_S', '10'))
-        self.last_embed_save_time = 0
-        self.last_detect_save_time = 0
+        self.last_save_time = 0
         self.debug_image_dir = "debug_images"
         if self.debug_save_images:
             os.makedirs(self.debug_image_dir, exist_ok=True)
@@ -111,11 +146,11 @@ class FaceEmbedService:
         # Model paths
         self.face_recognition_hef = os.getenv(
             'FACE_RECOGNITION_HEF', 
-            '/home/harvest/face_embed_api/models/arcface_mobilefacenet.hef'
+            os.path.join(os.path.dirname(__file__), '..', 'models', 'arcface_mobilefacenet.hef')
         )
         self.face_detection_hef = os.getenv(
             'FACE_DETECTION_HEF',
-            '/home/harvest/face_embed_api/models/scrfd_10g.hef'
+            os.path.join(os.path.dirname(__file__), '..', 'models', 'scrfd_10g.hef')
         )
         
         # Pre-check that model files exist to fail early
@@ -198,17 +233,9 @@ class FaceEmbedService:
         Generic inference loop for a given model.
         This function runs in a dedicated thread for each model.
         """
-        # Using a list as a mutable container to pass the exception from the callback
-        # thread back to this inference thread. This avoids using 'user_data' which
-        # is not supported in all hailort versions.
-        callback_exception_container = [None]
-
         def inference_callback(completion_info):
-            # This callback is executed in a different thread context by the HailoRT driver.
-            # We cannot raise from here, so we store the exception in the container.
             if completion_info.exception:
-                callback_exception_container[0] = completion_info.exception
-                logger.error(f"[{name}] Async inference error in callback: {completion_info.exception}")
+                logger.error(f"[{name}] Async inference error: {completion_info.exception}")
 
         with infer_model.configure() as configured_model:
             while True:
@@ -218,8 +245,6 @@ class FaceEmbedService:
                     break
                 
                 original_frame, preprocessed_frame = batch_data
-                # Reset exception from previous run before new inference
-                callback_exception_container[0] = None
 
                 try:
                     # Explicitly create output buffers with the correct dtype
@@ -227,313 +252,381 @@ class FaceEmbedService:
                         info.name: np.empty(info.shape, dtype=np.uint8)
                         for info in infer_model.outputs
                     }
-
-                    # --- CRITICAL FIX ---
-                    # Zero out the output buffers before inference. This is crucial because
-                    # if the async job fails silently without raising an exception, we prevent
-                    # returning stale data from a previous inference run. Returning a zero
-                    # vector is a safe failure mode.
-                    for buf in output_buffers.values():
-                        buf.fill(0)
-
                     bindings = configured_model.create_bindings(output_buffers=output_buffers)
                     bindings.input().set_buffer(preprocessed_frame)
                     
                     configured_model.wait_for_async_ready(timeout_ms=10000)
-                    job = configured_model.run_async(
-                        [bindings], 
-                        callback=inference_callback
-                    )
+                    job = configured_model.run_async([bindings], inference_callback)
                     job.wait(10000)
 
-                    # After job completion, check if the callback caught an exception
-                    if callback_exception_container[0]:
-                        # An exception occurred in the callback. Propagate it.
-                        raise callback_exception_container[0]
-
-                    output_queue.put((original_frame, output_buffers))
+                    # For multi-output models, return a dict. For single, the raw array.
+                    if len(output_buffers) == 1:
+                        result = list(output_buffers.values())[0]
+                    else:
+                        result = output_buffers
+                    
+                    output_queue.put((original_frame, result))
 
                 except Exception as e:
-                    logger.error(f"[{name}] An exception occurred during inference: {e}", exc_info=True)
-                    # Put a marker to signal error to the consumer
-                    output_queue.put((original_frame, None))
+                    logger.error(f"[{name}] Inference execution failed: {e}", exc_info=True)
+                    # Propagate exception to the caller
+                    output_queue.put((original_frame, e))
 
     def _decode_image(self, image_base64: str) -> np.ndarray:
-        """Decodes a base64 string to a BGR numpy array."""
+        """Decode base64 image to numpy array"""
         try:
-            image_bytes = base64.b64decode(image_base64)
-            image_np = np.frombuffer(image_bytes, np.uint8)
-            image = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
+            image_data = base64.b64decode(image_base64)
+            image_array = np.frombuffer(image_data, dtype=np.uint8)
+            image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
             if image is None:
-                raise ValueError("Decoded image is null.")
+                raise ValueError("Failed to decode image")
             return image
         except Exception as e:
-            logger.error(f"Failed to decode base64 image: {e}")
-            raise ValueError("Invalid base64 image format.")
-
+            raise ValueError(f"Invalid image data: {e}")
+    
     def _crop_face(self, image: np.ndarray, bbox: BBoxModel) -> Tuple[np.ndarray, float]:
-        """Crops the face from the image using the bounding box."""
-        if not (bbox.w > 0 and bbox.h > 0):
-            raise ValueError("BBox width and height must be positive.")
+        """Crop face from image using bounding box"""
+        h, w = image.shape[:2]
         
-        img_h, img_w, _ = image.shape
-        x1, y1 = max(0, bbox.x), max(0, bbox.y)
-        x2, y2 = min(img_w, bbox.x + bbox.w), min(img_h, bbox.y + bbox.h)
+        # Validate bbox
+        if bbox.x < 0 or bbox.y < 0 or bbox.x + bbox.w > w or bbox.y + bbox.h > h:
+            raise ValueError(f"Bounding box is out of image bounds. Image size: ({w}x{h}), BBox: ({bbox.x}, {bbox.y}, {bbox.w}, {bbox.h})")
         
-        if x1 >= x2 or y1 >= y2:
-            raise ValueError("BBox is completely outside the image.")
-
-        # Calculate confidence as the ratio of the cropped area to the original bbox area
-        cropped_area = (x2 - x1) * (y2 - y1)
-        original_area = bbox.w * bbox.h
-        confidence = cropped_area / original_area if original_area > 0 else 0.0
+        if bbox.w <= 0 or bbox.h <= 0:
+            raise ValueError("Invalid bounding box dimensions")
         
-        cropped_face = image[y1:y2, x1:x2]
-        return cropped_face, confidence
-
+        # Crop face region
+        face_image = image[bbox.y:bbox.y + bbox.h, bbox.x:bbox.x + bbox.w]
+        
+        # Calculate confidence based on face size and aspect ratio
+        face_area = bbox.w * bbox.h
+        total_area = w * h
+        area_ratio = face_area / total_area
+        
+        # Aspect ratio score (ideal face aspect ratio ~0.75)
+        aspect_ratio = bbox.h / bbox.w
+        aspect_score = 1.0 - abs(aspect_ratio - 0.75) / 0.75
+        
+        # Size score (prefer larger faces)
+        size_score = min(area_ratio * 10, 1.0)
+        
+        confidence = (aspect_score + size_score) / 2.0
+        confidence = max(0.1, min(1.0, confidence))
+        
+        return face_image, confidence
+    
     def _align_face(self, image: np.ndarray, landmarks: List[LandmarkPoint]) -> np.ndarray:
-        """Aligns a face image using 5 landmarks."""
-        # Standard 5-point landmarks for a 112x112 image
-        dst_landmarks = np.array([
-            [38.2946, 51.6963], [73.5318, 51.5014],
-            [56.0252, 71.7366], [41.5493, 92.3655],
+        """
+        Aligns a face using a similarity transformation based on landmarks.
+        This implementation is a Python version of the logic in the provided
+        face_align.cpp, using scikit-image for the transformation calculation.
+        """
+        # Destination landmarks based on the C++ reference code (standard for ArcFace)
+        # Scaled for a 112x112 image.
+        DEST_LANDMARKS = np.array([
+            [38.2946, 51.6963],
+            [73.5318, 51.5014],
+            [56.0252, 71.7366],
+            [41.5493, 92.3655],
             [70.7299, 92.2041]
         ], dtype=np.float32)
 
-        src_landmarks = np.array([(p.x, p.y) for p in landmarks], dtype=np.float32)
-
-        # Estimate similarity transform
+        # Convert source landmarks from Pydantic model to numpy array
+        src_landmarks = np.array([[p.x, p.y] for p in landmarks], dtype=np.float32)
+        
+        # Estimate the transformation matrix
         tform = SimilarityTransform()
-        tform.estimate(src_landmarks, dst_landmarks)
+        tform.estimate(src_landmarks, DEST_LANDMARKS)
         M = tform.params[0:2, :]
 
+        # Get model input shape to determine the output size
+        input_shape = self.rec_infer_model.input().shape
+        model_h, model_w = int(input_shape[0]), int(input_shape[1])
+
         # Apply the warp
-        aligned_face = cv2.warpAffine(image, M, (112, 112), borderValue=0.0)
+        aligned_face = cv2.warpAffine(image, M, (model_w, model_h), borderValue=0.0)
+
         return aligned_face
-
+    
     def _preprocess_face_for_hailo(self, face_image: np.ndarray, model_shape: Tuple[int, int, int]) -> np.ndarray:
-        """Preprocesses a cropped face image for the Hailo embedding model."""
-        # Ensure the image is in BGR format
-        if len(face_image.shape) == 2:
-            face_image = cv2.cvtColor(face_image, cv2.COLOR_GRAY2BGR)
-        
-        # Resize to model's expected input size (e.g., 112x112)
-        h, w, c = model_shape
-        resized_face = cv2.resize(face_image, (w, h), interpolation=cv2.INTER_AREA)
-
-        # Save debug image if needed
-        if self.debug_save_images and (time.time() - self.last_embed_save_time > self.debug_save_interval_s):
-            self.last_embed_save_time = time.time()
-            # Save unaligned cropped face for comparison
-            cv2.imwrite(
-                os.path.join(self.debug_image_dir, f"cropped_for_embedding_{self.last_embed_save_time:.0f}.jpg"),
-                face_image
-            )
-            # Save aligned face ready for embedding
-            cv2.imwrite(
-                os.path.join(self.debug_image_dir, f"aligned_for_embedding_{self.last_embed_save_time:.0f}.jpg"),
-                resized_face
-            )
-
-        # BGR -> RGB and HWC -> CHW
-        rgb_face = resized_face[:, :, ::-1]
-        chw_face = np.transpose(rgb_face, (2, 0, 1))
-        
-        # Add batch dimension and ensure it's a contiguous C-style array
-        # This is CRITICAL for hailo buffer compatibility.
-        return np.expand_dims(chw_face, axis=0).astype(np.uint8)
-
-
-    def _extract_embedding_hailo(self, face_image: np.ndarray, confidence: float, is_aligned: bool = False) -> np.ndarray:
         """
-        Extracts a 512-D embedding vector from a single face image using the Hailo device.
-        This is a synchronous wrapper around the async inference loop.
+        Preprocesses face image for the Hailo model, maintaining aspect ratio.
+        Resizes the image to fit within the model's input dimensions and pads
+        the remaining area with black.
         """
-        start_time = time.time()
+        # Get model input dimensions
+        model_h, model_w, _ = model_shape
 
-        try:
-            # Get input layer shape from the model
-            input_shape = self.rec_infer_model.inputs[0].shape
-            
-            # Preprocess the face
-            if not is_aligned:
-                # The _align_face function is now separate. If landmarks are available, it should be called before this.
-                # Here, we just resize. A more robust flow would ensure alignment happens first.
-                processed_face = self._preprocess_face_for_hailo(face_image, input_shape[1:])
-            else:
-                # Image is already aligned and resized
-                processed_face = face_image
+        # Get original image dimensions
+        h, w = face_image.shape[:2]
+ 
+        if h == 0 or w == 0:
+            raise ValueError("Input image for preprocessing has zero height or width")
 
-            # Send to inference queue and wait for result
-            self.rec_input_queue.put((face_image, processed_face))
-            
-            # Wait for result with a timeout to prevent indefinite blocking
-            try:
-                original_frame_ignored, raw_output = self.rec_output_queue.get(timeout=2.0)
-                if raw_output is None:
-                    raise RuntimeError("Inference job failed and returned no output.")
-            except queue.Empty:
-                logger.error("Timeout waiting for recognition inference result.")
-                raise RuntimeError("Timeout waiting for recognition result.")
+        # Calculate scaling factor to maintain aspect ratio
+        scale = min(model_w / w, model_h / h)
+        new_w, new_h = int(w * scale), int(h * scale)
 
-            # Post-process the raw output from the Hailo device
-            # This assumes a single output from the recognition model.
-            output_name = self.rec_infer_model.outputs[0].name
-            raw_vector = raw_output[output_name].flatten()
+        # Resize image
+        resized_face = cv2.resize(face_image, (new_w, new_h))
 
-            # Dequantize the output if quantization info is available
-            if output_name in self.rec_quant_infos:
-                scale, zp = self.rec_quant_infos[output_name]
-                vector_dequantized = (raw_vector.astype(np.float32) - zp) * scale
-            else:
-                # Fallback if quant_info is not found (though it should be)
-                vector_dequantized = raw_vector.astype(np.float32)
-
-            # L2 Normalization
-            norm = np.linalg.norm(vector_dequantized)
-            if norm == 0:
-                # Handle zero-vector case to avoid division by zero
-                normalized_vector = np.zeros_like(vector_dequantized)
-            else:
-                normalized_vector = vector_dequantized / norm
-
-            end_time = time.time()
-            processing_time_ms = int((end_time - start_time) * 1000)
-            
-            return normalized_vector, processing_time_ms, confidence
-
-        except Exception as e:
-            logger.error(f"Error during embedding extraction: {e}", exc_info=True)
-            # Return a zero vector on failure as a safe default
-            return np.zeros(512), 0, 0.0
-
-    async def extract_embedding(self, request: EmbedRequest) -> Tuple[List[float], int, float]:
-        """High-level function to handle a single embedding request."""
-        image = self._decode_image(request.image_base64)
-
-        if request.landmarks and len(request.landmarks) == 5:
-            # Align the original, full-resolution image first
-            aligned_face_full_res = self._align_face(image, request.landmarks)
-            # The pre-processing step will handle resizing
-            face_to_embed = aligned_face_full_res
-            # Since we are aligning, confidence is assumed to be high
-            confidence = 1.0 
-            is_aligned = True
+        # Create a black canvas of model input size
+        if len(face_image.shape) == 3:
+            padded_image = np.zeros((model_h, model_w, 3), dtype=np.uint8)
         else:
-            # Fallback to simple crop if no landmarks are provided
-            logger.warning("No landmarks provided. Falling back to simple crop. Results may be less accurate.")
-            face_to_embed, confidence = self._crop_face(image, request.bbox)
-            is_aligned = False
-        
-        # Run in executor to avoid blocking the event loop with synchronous Hailo calls
-        loop = asyncio.get_running_loop()
-        vector, processing_time, final_confidence = await loop.run_in_executor(
-            None, self._extract_embedding_hailo, face_to_embed, confidence, is_aligned
-        )
-        return vector.tolist(), processing_time, final_confidence
+            # Handle grayscale images if necessary
+            padded_image = np.zeros((model_h, model_w), dtype=np.uint8)
 
+        # Calculate padding to center the image
+        top = (model_h - new_h) // 2
+        left = (model_w - new_w) // 2
+
+        # Paste the resized image onto the center of the black canvas
+        padded_image[top:top + new_h, left:left + new_w] = resized_face
+        
+        return padded_image
+    
+    def _extract_embedding_hailo(self, face_image: np.ndarray, confidence: float, is_aligned: bool = False) -> np.ndarray:
+        """Extract face embedding using Hailo model"""
+        if not self.rec_infer_model:
+            raise RuntimeError("Hailo recognition model not initialized")
+        
+        # 预处理人脸图像
+        model_shape = self.rec_infer_model.input().shape
+        preprocessed_face = self._preprocess_face_for_hailo(face_image, model_shape)
+        
+        # DEBUG: Conditionally save preprocessed image for embedding
+        if self.debug_save_images:
+            current_time = time.time()
+            if (current_time - self.last_save_time) > self.debug_save_interval_s:
+                try:
+                    prefix = "aligned" if is_aligned else "cropped"
+                    filename = os.path.join(
+                        self.debug_image_dir, 
+                        f"{prefix}_for_embedding_{int(current_time)}_{confidence:.2f}.jpg"
+                    )
+                    cv2.imwrite(filename, preprocessed_face)
+                    logger.info(f"Saved debug image for embedding to {filename}")
+                    self.last_save_time = current_time
+                except Exception as e:
+                    logger.error(f"Failed to save embedding debug image: {e}")
+        
+        # 发送到推理队列
+        self.rec_input_queue.put((face_image, preprocessed_face))
+        
+        # 获取推理结果
+        try:
+            original_frame, result = self.rec_output_queue.get(timeout=15.0)
+            if isinstance(result, Exception):
+                raise RuntimeError("Inference failed in worker thread.") from result
+            
+            # The recognition model has one output.
+            # Handle both dict and raw array for compatibility with old inference loop
+            if isinstance(result, dict):
+                output_name = list(result.keys())[0]
+                embedding_raw = result[output_name]
+            else:
+                output_name = self.rec_infer_model.hef.get_output_vstream_infos()[0].name
+                embedding_raw = result
+            
+            # --- CRITICAL FIX: Dequantize the output ---
+            if output_name in self.rec_quant_infos:
+                quant_scale, quant_zp = self.rec_quant_infos[output_name]
+                embedding_dequantized = (embedding_raw.astype(np.float32) - quant_zp) * quant_scale
+            else:
+                logger.warning(f"Quantization info for output '{output_name}' not found. Using raw output.")
+                embedding_dequantized = embedding_raw.astype(np.float32)
+
+            # 展平到1维
+            embedding = embedding_dequantized.flatten()
+            
+            # 如果不是512维，进行填充或截断
+            if len(embedding) != 512:
+                logger.warning(f"Embedding dimension is {len(embedding)}, not 512. Padding/truncating.")
+                if len(embedding) > 512:
+                    embedding = embedding[:512]
+                else:
+                    # 填充到512维
+                    padding = np.zeros(512 - len(embedding))
+                    embedding = np.concatenate([embedding, padding])
+            
+            # L2归一化
+            norm = np.linalg.norm(embedding)
+            if norm > 0:
+                embedding = embedding / norm
+            
+            return embedding.astype(np.float32)
+            
+        except queue.Empty:
+            raise RuntimeError("Hailo inference timeout after 15 seconds")
+    
+    async def extract_embedding(self, request: EmbedRequest) -> Tuple[List[float], int, float]:
+        """Extract face embedding from image"""
+        start_time = time.time()
+        
+        try:
+            # Decode image
+            image = self._decode_image(request.image_base64)
+            is_aligned = False
+
+            # If landmarks are provided, align the face first on the whole image
+            if request.landmarks and len(request.landmarks) == 5:
+                aligned_face = self._align_face(image, request.landmarks)
+                # After alignment, the face is already cropped and sized for the model.
+                # We can use a dummy confidence score.
+                face_image = aligned_face
+                confidence = 1.0 
+                is_aligned = True
+                logger.info("Performed face alignment using landmarks.")
+            else:
+                # Fallback to original crop and resize logic if no landmarks
+                face_image, confidence = self._crop_face(image, request.bbox)
+                logger.info("No landmarks provided, using simple crop and resize.")
+
+            # Extract embedding using Hailo hardware
+            embedding = self._extract_embedding_hailo(face_image, confidence, is_aligned=is_aligned)
+            logger.info("Used Hailo hardware for inference")
+            
+            # Convert to list
+            vector = embedding.tolist()
+            
+            processing_time = int((time.time() - start_time) * 1000)
+            
+            return vector, processing_time, confidence
+            
+        except Exception as e:
+            logger.error(f"Face embedding extraction failed: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
+    
     async def extract_embeddings_batch(self, requests: List[EmbedRequest]) -> Tuple[List[List[float]], List[int]]:
-        """Handles batch embedding requests."""
-        # Note: This is a simple sequential implementation. For true batching,
-        # the Hailo inference loop needs to be adapted to handle batches.
+        """Extract face embeddings for multiple images"""
         vectors = []
         processing_times = []
+        
         for req in requests:
-            vector, ptime, _ = await self.extract_embedding(req)
+            vector, proc_time, _ = await self.extract_embedding(req)
             vectors.append(vector)
-            processing_times.append(ptime)
+            processing_times.append(proc_time)
+        
         return vectors, processing_times
 
     def _preprocess_image_for_detection(self, image: np.ndarray) -> Tuple[np.ndarray, float, Tuple[int, int]]:
-        """Preprocesses an image for the SCRFD detection model."""
-        img_h, img_w = image.shape[:2]
+        """Preprocess image for face detection model"""
+        if not self.det_infer_model:
+            raise RuntimeError("Face detection model not initialized")
         
-        # Assuming model input is 640x640 for scrfd_10g
-        input_shape = self.det_infer_model.inputs[0].shape
-        model_h, model_w = input_shape[1], input_shape[2]
+        # Get detection model input dimensions
+        input_shape = self.det_infer_model.input().shape
+        model_h, model_w = int(input_shape[0]), int(input_shape[1])
 
-        scale = min(model_h / img_h, model_w / img_w)
-        scaled_w, scaled_h = int(img_w * scale), int(img_h * scale)
-        
-        scaled_img = cv2.resize(image, (scaled_w, scaled_h), interpolation=cv2.INTER_LINEAR)
-        
-        # Pad to model input size
-        padded_img = np.zeros((model_h, model_w, 3), dtype=np.uint8)
-        padded_img[:scaled_h, :scaled_w, :] = scaled_img
-        
-        offset = ( (model_w - scaled_w) // 2, (model_h - scaled_h) // 2 )
+        # Get original image dimensions
+        h, w = image.shape[:2]
 
-        # HWC -> CHW and add batch dimension
-        chw_img = np.transpose(padded_img, (2, 0, 1))
+        # Calculate scaling factor to maintain aspect ratio
+        scale = min(model_w / w, model_h / h)
+        new_w, new_h = int(w * scale), int(h * scale)
+
+        # Resize image
+        resized_image = cv2.resize(image, (new_w, new_h))
+
+        # Create a black canvas of model input size
+        if len(image.shape) == 3:
+            padded_image = np.zeros((model_h, model_w, 3), dtype=np.uint8)
+        else:
+            padded_image = np.zeros((model_h, model_w), dtype=np.uint8)
+
+        # Calculate padding to center the image
+        top = (model_h - new_h) // 2
+        left = (model_w - new_w) // 2
+
+        # Paste the resized image onto the center of the black canvas
+        padded_image[top:top + new_h, left:left + new_w] = resized_image
         
-        return np.expand_dims(chw_img, axis=0).astype(np.uint8), scale, offset
+        return padded_image, scale, (left, top)
 
     def _non_maximum_suppression(self, boxes: np.ndarray, scores: np.ndarray, iou_threshold: float) -> List[int]:
         """
         Performs Non-Maximum Suppression (NMS) on bounding boxes.
         
         Args:
-            boxes (np.ndarray): Bounding boxes, shape (N, 4) -> (x1, y1, x2, y2).
+            boxes (np.ndarray): Bounding boxes, shape (N, 4) with format [x1, y1, x2, y2].
             scores (np.ndarray): Confidence scores for each box, shape (N,).
             iou_threshold (float): IoU threshold for suppression.
-
+            
         Returns:
-            List[int]: List of indices of the boxes to keep.
+            List[int]: Indices of the boxes to keep.
         """
-        if boxes.size == 0:
+        if boxes.shape[0] == 0:
             return []
 
-        x1, y1, x2, y2 = boxes[:, 0], boxes[:, 1], boxes[:, 2], boxes[:, 3]
-        areas = (x2 - x1) * (y2 - y1)
-        order = scores.argsort()[::-1]
+        # Sort by score in descending order
+        idxs = scores.argsort()[::-1]
 
+        x1 = boxes[:, 0]
+        y1 = boxes[:, 1]
+        x2 = boxes[:, 2]
+        y2 = boxes[:, 3]
+
+        area = (x2 - x1) * (y2 - y1)
+        
         keep = []
-        while order.size > 0:
-            i = order[0]
+        while idxs.size > 0:
+            # Pick the box with the highest score
+            i = idxs[0]
             keep.append(i)
-
-            # Calculate IoU
-            xx1 = np.maximum(x1[i], x1[order[1:]])
-            yy1 = np.maximum(y1[i], y1[order[1:]])
-            xx2 = np.minimum(x2[i], x2[order[1:]])
-            yy2 = np.minimum(y2[i], y2[order[1:]])
-
+            
+            # Compute IoU of the picked box with the rest
+            xx1 = np.maximum(x1[i], x1[idxs[1:]])
+            yy1 = np.maximum(y1[i], y1[idxs[1:]])
+            xx2 = np.minimum(x2[i], x2[idxs[1:]])
+            yy2 = np.minimum(y2[i], y2[idxs[1:]])
+            
             w = np.maximum(0.0, xx2 - xx1)
             h = np.maximum(0.0, yy2 - yy1)
-            intersection = w * h
             
-            union = areas[i] + areas[order[1:]] - intersection
-            iou = intersection / (union + 1e-8)
-
-            # Keep boxes with IoU less than the threshold
-            inds = np.where(iou <= iou_threshold)[0]
-            order = order[inds + 1]
-
+            intersection = w * h
+            union = area[i] + area[idxs[1:]] - intersection
+            
+            iou = intersection / union
+            
+            # Keep only boxes with IoU less than the threshold
+            remaining_idxs = np.where(iou <= iou_threshold)[0]
+            idxs = idxs[remaining_idxs + 1]
+            
         return keep
 
     def _generate_anchors(self, model_input_shape: Tuple[int, int], strides: List[int] = [8, 16, 32], num_anchors: int = 2) -> Dict[int, np.ndarray]:
-        """
-        Generates anchors for each stride for the SCRFD model.
-        This should be pre-calculated and cached for efficiency.
-        """
-        h, w = model_input_shape
-        anchors_by_stride = {}
+        """Generate anchors for SCRFD model."""
+        all_anchors = {}
         for stride in strides:
-            feature_h, feature_w = h // stride, w // stride
+            feature_map_h = model_input_shape[0] // stride
+            feature_map_w = model_input_shape[1] // stride
             
             # Create a grid of anchor centers
-            x_centers = (np.arange(feature_w) + 0.5) * stride
-            y_centers = (np.arange(feature_h) + 0.5) * stride
+            x_centers = (np.arange(feature_map_w) + 0.5) * stride
+            y_centers = (np.arange(feature_map_h) + 0.5) * stride
             
+            # Use meshgrid to create all combinations of x and y
             xv, yv = np.meshgrid(x_centers, y_centers)
-            grid = np.stack((xv, yv), axis=-1).reshape(-1, 2)
             
-            # Repeat for each anchor at a given location
-            # SCRFD has 2 anchors per location
-            all_anchors = np.repeat(grid, num_anchors, axis=0)
-            anchors_by_stride[stride] = all_anchors
-
-        return anchors_by_stride
+            # Stack and reshape to get a list of (x, y) centers
+            anchor_centers = np.stack([xv, yv], axis=-1).reshape(-1, 2)
+            
+            # SCRFD uses num_anchors (typically 2) anchors of the same size at each location
+            # So we repeat the centers for each anchor
+            total_anchors_at_stride = anchor_centers.shape[0] * num_anchors
+            
+            # Repeat each center 'num_anchors' times
+            repeated_centers = np.repeat(anchor_centers, num_anchors, axis=0)
+            
+            # Add stride as a third column for decoding later
+            stride_col = np.full((total_anchors_at_stride, 1), stride)
+            
+            # Final anchor format for this stride: [center_x, center_y, stride]
+            anchors_with_stride = np.concatenate([repeated_centers, stride_col], axis=1)
+            
+            all_anchors[stride] = anchors_with_stride
+        return all_anchors
 
     def _parse_detection_results(self, 
                                  raw_outputs: Dict[str, np.ndarray], 
@@ -544,365 +637,484 @@ class FaceEmbedService:
                                  confidence_threshold: float,
                                  nms_threshold: float, 
                                  min_face_size: int) -> List[DetectedFace]:
-        """Parses the raw output of the SCRFD model to get final bounding boxes."""
-        
+        """
+        Parses the raw output from the SCRFD model, decodes bounding boxes
+        and landmarks, performs NMS, and scales back to original image size.
+        """
         strides = [8, 16, 32]
         num_anchors = 2
-        anchors = self._generate_anchors(model_input_shape)
-        
-        all_bboxes = []
-        all_scores = []
-        all_landmarks = []
 
+        # 1. Generate anchors
+        anchors = self._generate_anchors(model_input_shape, strides, num_anchors)
+
+        all_proposals = []
+
+        # 2. Decode outputs for each stride
         for stride in strides:
-            # --- Get raw outputs ---
-            # Shape is (1, H, W, num_anchors * 2) for scores, (1, H, W, num_anchors * 4) for bboxes, (1, H, W, num_anchors * 10) for landmarks
-            score_tensor = raw_outputs.get(f'score_{stride}', raw_outputs.get(f'face_rpn_cls_prob_reshape_stride{stride}'))
-            bbox_tensor = raw_outputs.get(f'bbox_{stride}', raw_outputs.get(f'face_rpn_bbox_pred_stride{stride}'))
-            landmark_tensor = raw_outputs.get(f'landmark_{stride}', raw_outputs.get(f'face_rpn_landmark_pred_stride{stride}'))
+            # --- Get the raw outputs for this stride ---
+            # NOTE: The exact output names depend on the exported model.
+            # We derive them based on the pattern found in the logs.
+            # Stride 8: conv41(score), conv42(bbox), conv43(kps)
+            # Stride 16: conv49(score), conv50(bbox), conv51(kps)
+            # Stride 32: conv56(score), conv57(bbox), conv58(kps)
+            score_layer_name = f'scrfd_10g/conv{41 + (stride // 16 * 8)}'
+            bbox_layer_name = f'scrfd_10g/conv{42 + (stride // 16 * 8)}'
+            kps_layer_name = f'scrfd_10g/conv{43 + (stride // 16 * 8)}'
             
-            if score_tensor is None or bbox_tensor is None or landmark_tensor is None:
-                logger.warning(f"Missing one of the output tensors for stride {stride}. Skipping.")
+            if stride == 32: # Special case for stride 32 names
+                score_layer_name = 'scrfd_10g/conv56'
+                bbox_layer_name = 'scrfd_10g/conv57'
+                kps_layer_name = 'scrfd_10g/conv58'
+
+
+            scores_raw = raw_outputs.get(score_layer_name)
+            bbox_deltas_raw = raw_outputs.get(bbox_layer_name)
+            kps_deltas_raw = raw_outputs.get(kps_layer_name)
+
+            if scores_raw is None or bbox_deltas_raw is None or kps_deltas_raw is None:
+                logger.warning(f"Missing one or more output layers for stride {stride}. Skipping.")
                 continue
 
-            # --- Dequantize outputs ---
-            score_scale, score_zp = self.det_quant_infos.get(score_tensor.name, (1.0, 0))
-            bbox_scale, bbox_zp = self.det_quant_infos.get(bbox_tensor.name, (1.0, 0))
-            landmark_scale, landmark_zp = self.det_quant_infos.get(landmark_tensor.name, (1.0, 0))
-            
-            scores = (score_tensor.astype(np.float32) - score_zp) * score_scale
-            bboxes = (bbox_tensor.astype(np.float32) - bbox_zp) * bbox_scale
-            landmarks = (landmark_tensor.astype(np.float32) - landmark_zp) * landmark_scale
-            
-            # --- Reshape and process ---
-            scores = scores.reshape(-1, 1) # Reshaping to (num_proposals, 1)
-            bboxes = bboxes.reshape(-1, 4)
-            landmarks = landmarks.reshape(-1, 10)
+            # --- Dequantize and Reshape ---
+            score_scale, score_zp = self.det_quant_infos[score_layer_name]
+            bbox_scale, bbox_zp = self.det_quant_infos[bbox_layer_name]
+            kps_scale, kps_zp = self.det_quant_infos[kps_layer_name]
 
+            scores = (scores_raw.astype(np.float32) - score_zp) * score_scale
+            scores = scores.reshape(-1, 1)
+
+            bbox_deltas = (bbox_deltas_raw.astype(np.float32) - bbox_zp) * bbox_scale
+            bbox_deltas = bbox_deltas.reshape(-1, 4)
+
+            kps_deltas = (kps_deltas_raw.astype(np.float32) - kps_zp) * kps_scale
+            kps_deltas = kps_deltas.reshape(-1, 10) # 5 landmarks * 2 coords
+            
+            # --- Get Anchors for this stride ---
+            current_anchors = anchors[stride]
+            
             # --- Filter by confidence threshold ---
-            confident_indices = np.where(scores > confidence_threshold)[0]
-            if len(confident_indices) == 0:
+            keep_indices = np.where(scores >= confidence_threshold)[0]
+            if keep_indices.shape[0] == 0:
                 continue
 
-            scores = scores[confident_indices]
-            bboxes = bboxes[confident_indices]
-            landmarks = landmarks[confident_indices]
-            stride_anchors = anchors[stride][confident_indices]
-            
-            # --- Decode bounding boxes ---
-            # bboxes are deltas (dx, dy, dw, dh), need to apply to anchors
-            # Anchor centers are (cx, cy)
-            anchor_cx, anchor_cy = stride_anchors[:, 0], stride_anchors[:, 1]
-            
-            # Box centers
-            pred_cx = anchor_cx + bboxes[:, 0] * stride
-            pred_cy = anchor_cy + bboxes[:, 1] * stride
-            
-            # Box width/height
-            pred_w = np.exp(bboxes[:, 2]) * stride
-            pred_h = np.exp(bboxes[:, 3]) * stride
+            scores = scores[keep_indices]
+            bbox_deltas = bbox_deltas[keep_indices]
+            kps_deltas = kps_deltas[keep_indices]
+            current_anchors = current_anchors[keep_indices]
 
-            # Convert to (x1, y1, x2, y2)
-            x1 = pred_cx - pred_w * 0.5
-            y1 = pred_cy - pred_h * 0.5
-            x2 = pred_cx + pred_w * 0.5
-            y2 = pred_cy + pred_h * 0.5
-            decoded_bboxes = np.vstack([x1, y1, x2, y2]).T
+            # --- Decode Bounding Boxes ---
+            # Formula: new_coord = anchor_center + delta * stride
+            anchor_cx = current_anchors[:, 0]
+            anchor_cy = current_anchors[:, 1]
+            
+            # bbox decoding: The model predicts distance to the 4 sides from the anchor center
+            x1 = anchor_cx - bbox_deltas[:, 0] * stride
+            y1 = anchor_cy - bbox_deltas[:, 1] * stride
+            x2 = anchor_cx + bbox_deltas[:, 2] * stride
+            y2 = anchor_cy + bbox_deltas[:, 3] * stride
+            decoded_boxes = np.stack([x1, y1, x2, y2], axis=-1)
 
-            # --- Decode landmarks ---
-            # Landmarks are deltas relative to anchor centers
-            decoded_landmarks = np.zeros_like(landmarks)
+            # --- Decode Landmarks ---
+            decoded_kps = np.zeros_like(kps_deltas)
             for i in range(5):
-                decoded_landmarks[:, i*2]   = anchor_cx + landmarks[:, i*2] * stride # x
-                decoded_landmarks[:, i*2+1] = anchor_cy + landmarks[:, i*2+1] * stride # y
+                # kps decoding: The model predicts offset from the anchor center
+                kps_x = anchor_cx + kps_deltas[:, i * 2] * stride
+                kps_y = anchor_cy + kps_deltas[:, i * 2 + 1] * stride
+                decoded_kps[:, i * 2] = kps_x
+                decoded_kps[:, i * 2 + 1] = kps_y
 
-            all_bboxes.append(decoded_bboxes)
-            all_scores.append(scores.flatten())
-            all_landmarks.append(decoded_landmarks)
+            # Combine proposals from this stride
+            # Format: [x1, y1, x2, y2, score, kps...]
+            proposals = np.concatenate([decoded_boxes, scores, decoded_kps], axis=1)
+            all_proposals.append(proposals)
 
-        if not all_bboxes:
+        if not all_proposals:
             return []
 
-        # --- Combine results from all strides ---
-        final_bboxes = np.concatenate(all_bboxes)
-        final_scores = np.concatenate(all_scores)
-        final_landmarks = np.concatenate(all_landmarks)
+        # 3. Combine all proposals and perform NMS
+        all_proposals = np.concatenate(all_proposals, axis=0)
 
-        # --- Scale back to original image coordinates ---
-        img_h, img_w = original_image_shape
-        final_bboxes /= scale
-        final_landmarks /= scale
+        boxes_for_nms = all_proposals[:, :4]
+        scores_for_nms = all_proposals[:, 4]
 
-        # Clip to image boundaries
-        final_bboxes[:, 0::2] = np.clip(final_bboxes[:, 0::2], 0, img_w)
-        final_bboxes[:, 1::2] = np.clip(final_bboxes[:, 1::2], 0, img_h)
-        final_landmarks[:, 0::2] = np.clip(final_landmarks[:, 0::2], 0, img_w)
-        final_landmarks[:, 1::2] = np.clip(final_landmarks[:, 1::2], 0, img_h)
-
-        # --- Apply Non-Maximum Suppression (NMS) ---
-        keep_indices = self._non_maximum_suppression(final_bboxes, final_scores, nms_threshold)
+        keep_indices = self._non_maximum_suppression(boxes_for_nms, scores_for_nms, nms_threshold)
         
-        # --- Format final results ---
-        detected_faces = []
-        for idx in keep_indices:
-            bbox = final_bboxes[idx]
-            landmarks_raw = final_landmarks[idx]
-            
-            x1, y1, x2, y2 = bbox
-            w, h = x2 - x1, y2 - y1
+        final_proposals = all_proposals[keep_indices]
 
-            # Filter by min face size
-            if w < min_face_size or h < min_face_size:
+        # 4. Scale back to original image and format the output
+        final_faces = []
+        h_orig, w_orig = original_image_shape[:2]
+        offset_x, offset_y = offset
+        
+        for proposal in final_proposals:
+            # Scale coordinates from padded/resized model input space to original image space
+            x1 = (proposal[0] - offset_x) / scale
+            y1 = (proposal[1] - offset_y) / scale
+            x2 = (proposal[2] - offset_x) / scale
+            y2 = (proposal[3] - offset_y) / scale
+
+            # Clamp to image bounds
+            x1 = max(0, min(w_orig, x1))
+            y1 = max(0, min(h_orig, y1))
+            x2 = max(0, min(w_orig, x2))
+            y2 = max(0, min(h_orig, y2))
+
+            bbox_w = x2 - x1
+            bbox_h = y2 - y1
+
+            # --- Filter by minimum size ---
+            if min(bbox_w, bbox_h) < min_face_size:
                 continue
 
-            detected_faces.append(
-                DetectedFace(
-                    bbox=BBoxModel(x=int(x1), y=int(y1), w=int(w), h=int(h)),
-                    landmarks=[LandmarkPoint(x=landmarks_raw[i*2], y=landmarks_raw[i*2+1]) for i in range(5)],
-                    confidence=float(final_scores[idx])
-                )
-            )
+            # Scale landmarks
+            landmarks = []
+            for i in range(5):
+                kpt_x = (proposal[5 + i * 2] - offset_x) / scale
+                kpt_y = (proposal[5 + i * 2 + 1] - offset_y) / scale
+                landmarks.append(LandmarkPoint(x=float(kpt_x), y=float(kpt_y)))
 
-        return detected_faces
+            face = DetectedFace(
+                bbox=BBoxModel(x=int(x1), y=int(y1), w=int(bbox_w), h=int(bbox_h)),
+                landmarks=landmarks,
+                confidence=float(proposal[4])
+            )
+            final_faces.append(face)
         
+        return final_faces
+
     async def detect_faces(self, request: DetectRequest) -> Tuple[List[DetectedFace], int, int, int]:
-        """High-level function to handle a single face detection request."""
+        """INTERNAL: Detect faces in image using Hailo face detection model"""
         start_time = time.time()
         
-        image = self._decode_image(request.image_base64)
-        original_h, original_w = image.shape[:2]
-        
-        # Preprocess for detection model
-        preprocessed_image, scale, offset = self._preprocess_image_for_detection(image)
-        
-        # Run inference in executor
-        loop = asyncio.get_running_loop()
-        
-        self.det_input_queue.put((image, preprocessed_image))
         try:
-            original_frame, raw_outputs = self.det_output_queue.get(timeout=2.0)
-            if raw_outputs is None:
-                raise RuntimeError("Detection inference job failed and returned no output.")
-        except queue.Empty:
-            logger.error("Timeout waiting for detection inference result.")
-            raise RuntimeError("Timeout waiting for detection result.")
+            # Decode image
+            image = self._decode_image(request.image_base64)
+            h, w = image.shape[:2]
+            
+            # Preprocess image for detection
+            input_shape = self.det_infer_model.input().shape
+            preprocessed_image, scale, offset = self._preprocess_image_for_detection(image)
+            
+            # Send to detection inference queue
+            self.det_input_queue.put((image, preprocessed_image))
+            
+            # Get detection results
+            try:
+                original_frame, results = self.det_output_queue.get(timeout=15.0)
+                if isinstance(results, Exception):
+                    raise RuntimeError("Detection inference failed in worker thread.") from results
 
-        # --- Debug Save Detected Image ---
-        if self.debug_save_images and (time.time() - self.last_detect_save_time > self.debug_save_interval_s):
-            self.last_detect_save_time = time.time()
-            debug_img = original_frame.copy()
-            # The drawing happens after parsing, we need the parsed results
-        else:
-            debug_img = None
+                # The new parsing function expects a dictionary of outputs
+                if not isinstance(results, dict):
+                    raise TypeError(f"Expected a dict of outputs from inference, but got {type(results)}")
 
-        # Parse results
-        model_input_shape = self.det_infer_model.inputs[0].shape[1:3] # H, W
-        detected_faces = self._parse_detection_results(
-            raw_outputs,
-            (original_h, original_w),
-            model_input_shape,
-            scale,
-            offset,
-            request.confidence_threshold,
-            request.nms_threshold,
-            request.min_face_size
-        )
-        
-        end_time = time.time()
-        processing_time_ms = int((end_time - start_time) * 1000)
+                # Parse detection results using the new SCRFD-specific logic
+                faces = self._parse_detection_results(
+                    raw_outputs=results,
+                    original_image_shape=(h, w),
+                    model_input_shape=(input_shape[0], input_shape[1]),
+                    scale=scale,
+                    offset=offset,
+                    confidence_threshold=request.confidence_threshold,
+                    nms_threshold=request.nms_threshold,
+                    min_face_size=request.min_face_size
+                )
+                
+                # --- Debug: Save image with detected faces ---
+                if self.debug_save_images and faces:
+                    try:
+                        # Draw bounding boxes on the original image
+                        image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        # --- Draw on debug image and save ---
-        if debug_img is not None:
-            for face in detected_faces:
-                b = face.bbox
-                cv2.rectangle(debug_img, (b.x, b.y), (b.x + b.w, b.y + b.h), (0, 255, 0), 2)
-                for lm in face.landmarks:
-                    cv2.circle(debug_img, (int(lm.x), int(lm.y)), 2, (0, 0, 255), -1)
-            cv2.imwrite(
-                os.path.join(self.debug_image_dir, f"detected_{self.last_detect_save_time:.0f}.jpg"),
-                debug_img
-            )
+                        for face in faces:
+                            bbox = face.bbox
+                            p1 = (bbox.x, bbox.y)
+                            p2 = (bbox.x + bbox.w, bbox.y + bbox.h)
+                            cv2.rectangle(image_bgr, p1, p2, (0, 255, 0), 2)
+                            
+                            if hasattr(face, "landmarks") and face.landmarks is not None:
+                                for landmark in face.landmarks:
+                                    cv2.circle(image_bgr, (int(landmark.x), int(landmark.y)), 2, (0, 0, 255), -1)
+                        
+                        # Save the image
+                        timestamp = int(time.time())
+                        filename = os.path.join(self.debug_image_dir, f"detected_{timestamp}_{len(faces)}_faces.jpg")
+                        cv2.imwrite(filename, image_bgr)
+                        logger.info(f"Saved debug image with {len(faces)} detections to {filename}")
+                    except Exception as e:
+                        logger.error(f"Failed to save debug image: {e}")
 
-        return detected_faces, processing_time_ms, original_w, original_h
+                processing_time = int((time.time() - start_time) * 1000)
+                
+                return faces, processing_time, w, h
+                
+            except queue.Empty:
+                raise RuntimeError("Face detection inference timeout after 15 seconds")
+                
+        except Exception as e:
+            logger.error(f"Face detection failed: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
 
     async def detect_and_embed(self, request: DetectRequest):
-        """Combined detection and embedding endpoint."""
-        # 1. Detect all faces in the image
-        detected_faces, detection_time_ms, _, _ = await self.detect_faces(request)
-
+        """Detects faces and returns their embeddings in one go."""
+        total_start_time = time.time()
+        
+        # Step 1: Detect faces
+        logger.info("Step 1: Detecting faces...")
+        detected_faces, _, _, _ = await self.detect_faces(request)
+        
         if not detected_faces:
+            logger.info("No faces detected.")
             return []
 
-        # 2. For each detected face, perform embedding
+        logger.info(f"Detected {len(detected_faces)} faces. Step 2: Extracting embeddings...")
+        
+        # Step 2: Extract embeddings for each detected face
         results = []
-        # Create a list of embedding tasks to run concurrently
-        embedding_tasks = []
-
-        image_full = self._decode_image(request.image_base64)
+        original_image = self._decode_image(request.image_base64)
 
         for face in detected_faces:
-            # Create an EmbedRequest for each detected face
-            embed_request = EmbedRequest(
-                image_base64=request.image_base64, # Pass the original image
+            embed_req = EmbedRequest(
+                image_base64=request.image_base64, # Pass the original b64
                 bbox=face.bbox,
                 landmarks=face.landmarks
             )
-            # Add the embedding task to the list
-            embedding_tasks.append(self.extract_embedding(embed_request))
-        
-        # Run all embedding tasks in parallel
-        embedding_results = await asyncio.gather(*embedding_tasks)
+            # We call the internal logic, not the full endpoint async method
+            try:
+                start_time = time.time()
+                is_aligned = False
+                # Ensure the recognition model is ready for its specific inputs
+                if embed_req.landmarks and len(embed_req.landmarks) == 5:
+                    aligned_face = self._align_face(original_image, embed_req.landmarks)
+                    face_image = aligned_face
+                    confidence = 1.0
+                    is_aligned = True
+                else:
+                    face_image, confidence = self._crop_face(original_image, embed_req.bbox)
 
-        # 3. Combine detection and embedding results
-        for face, (vector, ptime, confidence) in zip(detected_faces, embedding_results):
-            results.append(
-                DetectAndEmbedResponseItem(
-                    bbox=face.bbox,
-                    landmarks=face.landmarks,
-                    detection_confidence=face.confidence,
-                    embedding=EmbedResponse(
-                        vector=vector,
-                        processing_time_ms=ptime,
-                        confidence=confidence
-                    )
-                )
-            )
-        
+                embedding = self._extract_embedding_hailo(face_image, confidence, is_aligned=is_aligned)
+                vector = embedding.tolist()
+                processing_time = int((time.time() - start_time) * 1000)
+                
+                # Append a dictionary with all info
+                results.append({
+                    "bbox": face.bbox.model_dump(),
+                    "landmarks": [lm.model_dump() for lm in face.landmarks],
+                    "detection_confidence": face.confidence,
+                    "embedding": {
+                        "vector": vector,
+                        "processing_time_ms": processing_time,
+                        "confidence": confidence
+                    }
+                })
+            except Exception as e:
+                logger.error(f"Could not process embedding for a face: {e}")
+
+        total_processing_time = int((time.time() - total_start_time) * 1000)
+        logger.info(f"Finished detect_and_embed in {total_processing_time}ms")
         return results
 
     def get_health(self) -> HealthResponse:
-        """Returns the health status of the service."""
+        """Get service health status"""
         uptime_ms = int((time.time() - self.start_time) * 1000)
+        
+        loaded = []
+        if self.det_infer_model:
+            loaded.append(os.path.basename(self.face_detection_hef))
+        if self.rec_infer_model:
+            loaded.append(os.path.basename(self.face_recognition_hef))
+
         return HealthResponse(
             status="ok",
             uptime_ms=uptime_ms,
-            loaded_models=[self.face_detection_hef, self.face_recognition_hef]
+            loaded_models=loaded or ["none"]
         )
-
+    
     def __del__(self):
-        """Graceful shutdown."""
-        logger.info("Shutting down FaceEmbedService...")
-        if self.det_thread and self.det_thread.is_alive():
+        """Cleanup resources"""
+        logger.info("FaceEmbedService shutting down. Unloading model.")
+        if self.det_input_queue:
             self.det_input_queue.put(None)
-            self.det_thread.join(timeout=5)
-        if self.rec_thread and self.rec_thread.is_alive():
+        if self.rec_input_queue:
             self.rec_input_queue.put(None)
-            self.rec_thread.join(timeout=5)
+
+        if self.det_thread and self.det_thread.is_alive():
+            self.det_thread.join(timeout=5.0)
+        if self.rec_thread and self.rec_thread.is_alive():
+            self.rec_thread.join(timeout=5.0)
         
-        # Clean up Hailo resources
-        if self.det_infer_model:
-            self.det_infer_model = None
-        if self.rec_infer_model:
-            self.rec_infer_model = None
-        if self.target:
-            self.target.release()
-            self.target = None
-        logger.info("FaceEmbedService shutdown complete.")
+        logger.info("Inference threads stopped.")
 
-# --- FastAPI App ---
-
-service_instance: Optional[FaceEmbedService] = None
+# Global service instance - will be initialized lazily
+face_embed_service = None
 
 def get_face_embed_service():
-    global service_instance
-    if service_instance is None:
-        logger.info("Creating and initializing FaceEmbedService instance...")
-        service_instance = FaceEmbedService()
-        logger.info("FaceEmbedService instance created.")
-    return service_instance
+    """Get or create face embed service instance"""
+    global face_embed_service
+    if face_embed_service is None:
+        face_embed_service = FaceEmbedService()
+    return face_embed_service
 
+# FastAPI app with optimized settings for concurrent access
 app = FastAPI(
     title="FaceEmbed API",
-    description="A high-performance face feature extraction service based on the Hailo-8 AI accelerator.",
-    version="1.0.0"
+    description="基于Hailo-8的人脸特征提取服务 - 支持多设备并发访问",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
+# Add CORS middleware - optimized for cross-machine access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # 允许Node-RED服务器跨域访问
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
+# Request logging middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
     response = await call_next(request)
-    process_time = (time.time() - start_time) * 1000
-    logger.info(f"{request.method} {request.url.path} - {response.status_code} - {process_time:.2f}ms")
+    process_time = time.time() - start_time
+    logger.info(f"{request.method} {request.url.path} - {response.status_code} - {process_time:.3f}s")
     return response
 
+# Application startup event
+@app.on_event("startup")
+def on_startup():
+    """Initialize database on startup."""
+    logger.info("Application startup...")
+    database.init_db()
+
+# Routes
 @app.get("/health", response_model=HealthResponse)
 async def health():
-    """Returns the health status of the service."""
-    service = get_face_embed_service()
-    return service.get_health()
+    """Health check endpoint"""
+    return get_face_embed_service().get_health()
 
 @app.post("/embed", response_model=EmbedResponse)
 async def embed_face(request: EmbedRequest):
-    """
-    Extracts a 512-D embedding vector from a single face image, given its bounding box and landmarks.
-    This is a manual endpoint. For an all-in-one solution, use `/detect_and_embed`.
-    """
-    try:
-        service = get_face_embed_service()
-        vector, ptime, confidence = await service.extract_embedding(request)
-        return EmbedResponse(vector=vector, processing_time_ms=ptime, confidence=confidence)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error in /embed endpoint: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+    """Extract face embedding from single image"""
+    service = get_face_embed_service()
+    vector, processing_time, confidence = await service.extract_embedding(
+        request
+    )
+    
+    return EmbedResponse(
+        vector=vector,
+        processing_time_ms=processing_time,
+        confidence=confidence
+    )
 
 @app.post("/batch_embed", response_model=BatchEmbedResponse)
 async def batch_embed_faces(request: BatchEmbedRequest):
-    """
-    Extracts embedding vectors from a batch of face images.
-    """
-    if len(request.images) > 20:
-         raise HTTPException(status_code=400, detail="Batch size cannot exceed 20 images.")
-    try:
-        service = get_face_embed_service()
-        vectors, ptimes = await service.extract_embeddings_batch(request.images)
-        return BatchEmbedResponse(vectors=vectors, processing_times=ptimes)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error in /batch_embed endpoint: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+    """Extract face embeddings from multiple images"""
+    if len(request.images) > 10:
+        raise HTTPException(status_code=400, detail="Maximum 10 images per batch")
+    
+    service = get_face_embed_service()
+    vectors, processing_times = await service.extract_embeddings_batch(request.images)
+    
+    return BatchEmbedResponse(
+        vectors=vectors,
+        processing_times=processing_times
+    )
 
 @app.post("/detect", response_model=DetectResponse)
 async def detect_faces(request: DetectRequest):
-    """
-    Detects faces in an image and returns their bounding boxes and landmarks.
-    """
-    try:
-        service = get_face_embed_service()
-        faces, ptime, width, height = await service.detect_faces(request)
-        return DetectResponse(faces=faces, processing_time_ms=ptime, image_width=width, image_height=height)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error in /detect endpoint: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+    """Detect faces in image using Hailo face detection model"""
+    service = get_face_embed_service()
+    faces, processing_time, image_width, image_height = await service.detect_faces(request)
+    
+    return DetectResponse(
+        faces=faces,
+        processing_time_ms=processing_time,
+        image_width=image_width,
+        image_height=image_height
+    )
 
 @app.post("/detect_and_embed", response_model=List[DetectAndEmbedResponseItem])
 async def detect_and_embed_faces(request: DetectRequest):
-    """
-    Performs both face detection and feature embedding in a single call.
-    This is the recommended primary endpoint.
-    """
+    """Detect faces in an image and return their embeddings"""
+    service = get_face_embed_service()
+    results = await service.detect_and_embed(request)
+    return results
+
+# --- Vector Database Endpoints ---
+
+@app.post("/vectors/add", response_model=AddVectorResponse)
+async def add_vector_endpoint(request: AddVectorRequest):
+    """Adds a face vector to the SQLite database."""
     try:
-        service = get_face_embed_service()
-        results = await service.detect_and_embed(request)
-        return results
+        vector_np = np.array(request.vector, dtype=np.float32)
+        if vector_np.shape != (512,):
+            raise ValueError(f"Invalid vector dimensions. Expected 512, got {vector_np.shape[0]}.")
+        
+        vector_id = database.add_vector(
+            collection=request.collection,
+            user_id=request.user_id,
+            vector=vector_np
+        )
+        return AddVectorResponse(
+            id=vector_id,
+            message=f"Vector added to collection '{request.collection}' for user '{request.user_id}'."
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error in /detect_and_embed endpoint: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Error in /vectors/add endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while adding vector.")
+
+@app.post("/vectors/search", response_model=SearchVectorResponse)
+async def search_vector_endpoint(request: SearchVectorRequest):
+    """Searches for similar vectors in the SQLite database."""
+    try:
+        query_vector = np.array(request.vector, dtype=np.float32)
+        if query_vector.shape != (512,):
+            raise ValueError(f"Invalid query vector dimensions. Expected 512, got {query_vector.shape[0]}.")
+
+        search_results = database.search_vectors(
+            collection=request.collection,
+            query_vector=query_vector,
+            threshold=request.threshold,
+            top_k=request.top_k
+        )
+        
+        # Convert list of dicts to list of SearchResultItem models
+        results_models = [SearchResultItem(**item) for item in search_results]
+
+        if not results_models:
+            return SearchVectorResponse(status="not_found", results=[])
+
+        return SearchVectorResponse(status="found", results=results_models)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error in /vectors/search endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while searching vectors.")
+
+
+@app.post("/vectors/delete", response_model=DeleteVectorResponse)
+async def delete_vector_endpoint(request: DeleteVectorRequest):
+    """Deletes all vectors for a given user_id in a collection."""
+    try:
+        deleted_count = database.delete_vectors_by_user(
+            collection=request.collection,
+            user_id=request.user_id
+        )
+        if deleted_count > 0:
+            return DeleteVectorResponse(status="success", deleted_count=deleted_count)
+        else:
+            return DeleteVectorResponse(status="not_found", deleted_count=0)
+    except Exception as e:
+        logger.error(f"Error in /vectors/delete endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while deleting vectors.")
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the FaceEmbed API. See /docs for details."} 
+    """Root endpoint"""
+    return {"message": "FaceEmbed API", "version": "1.0.0", "status": "running"}

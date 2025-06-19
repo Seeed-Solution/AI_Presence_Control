@@ -4,26 +4,26 @@ A **distributed** edge face recognition access control system based on the Hailo
 
 For detailed development documentation, API specifications, and contribution guidelines, please see [**docs/DEVELOPMENT.md**](docs/DEVELOPMENT.md).
 
-## ✅ Verified Distributed System Architecture
+## ✅ Simplified Distributed System Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌──────────────────┐
-│ Grove Vision AI │───→│   MQTT Broker   │───→│    Node-RED      │
-│      V2         │    │   (Main Server) │    │   (Main Server)  │
-│   (Multiple)    │    │                 │    │ ┌──────────────┐ │
-└─────────────────┘    └─────────────────┘    │ │ Configuration│ │
-                                              │ │ is managed in│ │
-                                              │ │ Node-RED     │ │
-                                              └──────────────────┘
-                                                         │
-                                                         ▼ HTTP API
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  FaceEmbed API  │◀───│     Qdrant      │◀───│  Vector Search  │
-│ ✅ Verified     │    │   (Main Server) │    │                 │
-│ 192.168.xx.xxx  │    │                 │    │                 │
-│ 3-18ms Inference│    │                 │    │                 │
-│ 28 Tests Passed │    │                 │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+  │ Grove Vision AI │───→│   MQTT Broker   │───→│    Node-RED     │
+  │      V2         │    │   (Main Server) │    │   (Main Server) │
+  │   (Multiple)    │    │                 │    │                 │
+  └─────────────────┘    └─────────────────┘    └─────────────────┘
+           ▲                                             │
+           │                                             │
+           │ MQTT                                        │ HTTP API
+           │                                             │
+           └────────────────────┬──────────────────────────┘
+                                │
+                                ▼
+                      ┌─────────────────┐
+                      │  FaceEmbed API  │
+                      │ (with SQLite DB)│
+                      │ 192.168.10.179  │
+                      └─────────────────┘
 ```
 
 
@@ -48,8 +48,8 @@ For detailed development documentation, API specifications, and contribution gui
 
 ## 🏗️ Distributed Deployment Architecture
 
-### Main Server (Node-RED + Qdrant + MQTT)
-- **Function**: Business logic orchestration, vector storage, message broker, monitoring
+### Main Server (Node-RED + MQTT)
+- **Function**: Business logic orchestration, message broker, monitoring
 - **Hardware**: Standard server or industrial PC
 - **Network**: Fixed IP address on the local network
 
@@ -109,7 +109,7 @@ cd AI_Presence_Control
 
 # Service URLs:
 # - Node-RED: http://localhost:1880
-# - Qdrant: http://localhost:6333
+# - Node-RED: http://localhost:1880
 ```
 
 #### 2. Deploy on Hailo Device ✅ **Verified**

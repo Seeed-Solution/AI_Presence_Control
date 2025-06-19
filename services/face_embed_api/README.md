@@ -8,6 +8,7 @@ A high-performance face feature extraction service based on the Hailo-8 AI accel
 - 🎯 **Standardized Output**: 512-dimension, L2-normalized face embedding vectors.
 - 🔄 **Asynchronous Processing**: Supports both single and batch image processing.
 - ✨ **All-in-One Detection & Embedding**: A single endpoint for face detection, alignment, and feature extraction.
+- 🗄️ **Built-in Vector Database**: Includes a self-contained SQLite database for vector storage and search, eliminating external dependencies.
 - 📊 **Comprehensive Tests**: 28 test cases with 100% pass rate.
 - 🌐 **Cross-Origin Support**: Enables access from clients like Node-RED on different machines.
 
@@ -17,8 +18,11 @@ A high-performance face feature extraction service based on the Hailo-8 AI accel
 face_embed_api/
 ├── 📂 src/                         # Core source code
 │   ├── app.py                      # FastAPI application
+│   ├── database.py                 # SQLite database management
 │   └── utils.py                    # Hailo inference utilities
 │   └── __init__.py                 # Package initializer
+├── 📂 data/                        # Data storage
+│   └── vectors.db                  # SQLite database file
 ├── 📂 tests/                       # Test suite
 │   ├── unit/                       # Unit tests
 │   └── integration/                # Integration tests
@@ -62,7 +66,7 @@ uv sync
 
 ```bash
 # Set PYTHONPATH and start with uvicorn (recommended)
-PYTHONPATH=src uv run uvicorn app:app --host 0.0.0.0 --port 8000
+PYTHONPATH=src uv run uvicorn src.app:app --host 0.0.0.0 --port 8000
 ```
 
 ### 4. Verify the Service
@@ -86,12 +90,51 @@ GET /health
 {
   "status": "ok",
   "uptime_ms": 12345,
-  "current_model": "path/to/model.hef"
+  "loaded_models": ["scrfd_10g.hef", "arcface_mobilefacenet.hef"]
+}
+```
+
+### Vector Database Endpoints
+
+These endpoints manage the internal SQLite vector database.
+
+#### Add a Vector
+```http
+POST /vectors/add
+Content-Type: application/json
+
+{
+  "collection": "office_entrance",
+  "user_id": "user_001",
+  "vector": [0.1, 0.2, "..."]
+}
+```
+
+#### Search for a Vector
+```http
+POST /vectors/search
+Content-Type: application/json
+
+{
+  "collection": "office_entrance",
+  "vector": [0.11, 0.22, "..."],
+  "threshold": 0.32
+}
+```
+
+#### Delete a User's Vectors
+```http
+POST /vectors/delete
+Content-Type: application/json
+
+{
+  "collection": "office_entrance",
+  "user_id": "user_001"
 }
 ```
 
 ### All-in-One Detection and Embedding
-This endpoint performs both face detection and feature extraction in a single request. It is the **recommended** primary endpoint.
+This endpoint performs both face detection and feature extraction in a single request. It is the **recommended** primary endpoint for recognition.
 
 ```http
 POST /detect_and_embed
@@ -242,37 +285,97 @@ Filenames include timestamps and confidence scores for easy tracking.
 import requests
 import base64
 import cv2
+import numpy as np
 
-# Prepare image
-image = cv2.imread('face.jpg')
-_, buffer = cv2.imencode('.jpg', image)
-image_base64 = base64.b64encode(buffer).decode('utf-8')
+# --- Configuration ---
+BASE_URL = "http://localhost:8000"
+IMAGE_PATH = "face.jpg"  # Create a dummy image or use a real one
+COLLECTION_NAME = "my_office_collection"
+USER_ID = "user_101"
 
-# Send request to the detect_and_embed endpoint
-response = requests.post('http://localhost:8000/detect_and_embed', json={
-    'image_base64': image_base64,
-    'confidence_threshold': 0.5
-})
+def image_to_base64(img_path):
+    """Encodes an image to base64"""
+    try:
+        with open(img_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
+    except FileNotFoundError:
+        print(f"Error: Image file not found at '{img_path}'. Creating a dummy file.")
+        dummy_img = np.zeros((200, 200, 3), dtype=np.uint8)
+        cv2.imwrite(img_path, dummy_img)
+        with open(img_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
 
-# Get results
-results = response.json()
-if results:
-    first_face = results[0]
-    vector = first_face['embedding']['vector']  # 512-dim embedding vector
-    confidence = first_face['embedding']['confidence'] # Embedding quality confidence
-    detection_confidence = first_face['detection_confidence'] # Detection confidence
-    print(f"Found {len(results)} faces. First face vector: {vector[:5]}...")
+def run_full_test():
+    # 1. Health check
+    print("--- 1. Health Check ---")
+    response = requests.get(f"{BASE_URL}/health")
+    print(f"Status: {response.status_code}, Body: {response.json()}")
+    response.raise_for_status()
+
+    # 2. Get a face vector
+    print("\n--- 2. Detecting face and getting embedding vector ---")
+    image_b64 = image_to_base64(IMAGE_PATH)
+    response = requests.post(
+        f"{BASE_URL}/detect_and_embed",
+        json={'image_base64': image_b64, 'confidence_threshold': 0.5}
+    )
+    response.raise_for_status()
+    results = response.json()
+    if not results:
+        print("No faces detected. Exiting.")
+        return
+    
+    vector = results[0]['embedding']['vector']
+    print(f"Detected {len(results)} faces. Vector obtained.")
+
+    # 3. Add vector to DB
+    print("\n--- 3. Adding vector to database ---")
+    add_payload = {
+        "collection": COLLECTION_NAME,
+        "user_id": USER_ID,
+        "vector": vector
+    }
+    response = requests.post(f"{BASE_URL}/vectors/add", json=add_payload)
+    print(f"Status: {response.status_code}, Body: {response.json()}")
+    response.raise_for_status()
+
+    # 4. Search for the vector
+    print("\n--- 4. Searching for the vector ---")
+    search_payload = {
+        "collection": COLLECTION_NAME,
+        "vector": vector,
+        "threshold": 0.9
+    }
+    response = requests.post(f"{BASE_URL}/vectors/search", json=search_payload)
+    print(f"Status: {response.status_code}, Body: {response.json()}")
+    response.raise_for_status()
+
+    # 5. Delete the vector
+    print("\n--- 5. Deleting the vector ---")
+    delete_payload = {
+        "collection": COLLECTION_NAME,
+        "user_id": USER_ID
+    }
+    response = requests.post(f"{BASE_URL}/vectors/delete", json=delete_payload)
+    print(f"Status: {response.status_code}, Body: {response.json()}")
+    response.raise_for_status()
+
+if __name__ == '__main__':
+    run_full_test()
 ```
 
 ### Node-RED Integration
 ```javascript
 // In a Node-RED Function node
+// This example performs detection and embedding
+// and can be chained with another function node to add the vector to the DB.
+
 const payload = {
-    image_base64: msg.payload.image,
+    image_base64: msg.payload.image, // Assumes base64 image is in msg.payload.image
     confidence_threshold: 0.5 // Optional
 };
 
-msg.url = "http://raspberry-pi:8000/detect_and_embed";
+msg.url = "http://YOUR_PI_IP:8000/detect_and_embed";
 msg.method = "POST";
 msg.headers = {"Content-Type": "application/json"};
 msg.payload = payload;
@@ -295,6 +398,7 @@ PYTHONPATH=src uv run uvicorn app:app --host 0.0.0.0 --port 8000
 - `FACE_DETECTION_HEF`: Path to the face detection model file
 - `DEBUG_SAVE_IMAGES`: Enable debug image saving (`true` / `false`)
 - `DEBUG_SAVE_INTERVAL_S`: Interval for saving debug images in seconds (default: 10)
+- `DB_FILE`: Path to the SQLite database file (default: `data/vectors.db`)
 
 ## 🚨 Dependencies
 
@@ -332,3 +436,4 @@ MIT License
 ---
 
 **FaceEmbed API** - High-performance face feature extraction service powered by Hailo-8 🚀
+- *Last updated: July 28, 2024*

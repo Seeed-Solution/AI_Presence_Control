@@ -56,7 +56,6 @@ check_prerequisites() {
 create_directories() {
     log_info "Creating necessary directories..."
     
-    mkdir -p services/qdrant/storage
     mkdir -p services/mqtt/data
     mkdir -p services/mqtt/log
     mkdir -p services/node_red/data
@@ -66,7 +65,7 @@ create_directories() {
 
 # Start infrastructure services
 start_infrastructure() {
-    log_info "Starting infrastructure services (Qdrant, MQTT)..."
+    log_info "Starting infrastructure services (MQTT)..."
     
     # Check and set Docker Compose command
     if command -v docker-compose &> /dev/null; then
@@ -76,7 +75,7 @@ start_infrastructure() {
     fi
     
     # Start infrastructure services
-    $DOCKER_COMPOSE_CMD up -d qdrant mosquitto
+    $DOCKER_COMPOSE_CMD up -d mosquitto
     
     # Wait for services to start
     log_info "Waiting for services to start..."
@@ -89,19 +88,6 @@ start_infrastructure() {
 # Check service health status
 check_service_health() {
     log_info "Checking service health..."
-    
-    # Check Qdrant
-    log_info "Checking Qdrant service..."
-    for i in {1..30}; do
-        if curl -f http://localhost:6333/health &> /dev/null; then
-            log_success "Qdrant service is running (http://localhost:6333)"
-            break
-        fi
-        sleep 2
-        if [ $i -eq 30 ]; then
-            log_warning "Qdrant service startup timed out, it might need more time."
-        fi
-    done
     
     # Check MQTT
     log_info "Checking MQTT service..."
@@ -167,48 +153,6 @@ check_and_connect_remote_face_api() {
     fi
 }
 
-# Initialize Qdrant collections
-init_qdrant_collections() {
-    log_info "Initializing Qdrant face vector collections..."
-    
-    # Wait for Qdrant to be fully up
-    timeout=60
-    while [ $timeout -gt 0 ]; do
-        if curl -f http://localhost:6333/health &> /dev/null; then
-            break
-        fi
-        sleep 1
-        ((timeout--))
-    done
-    
-    if [ $timeout -eq 0 ]; then
-        log_error "Qdrant startup timed out."
-        return 1
-    fi
-    
-    # Create default collections
-    collections=("default_faces" "office_entrance" "warehouse_door" "lab_access")
-    
-    for collection in "${collections[@]}"; do
-        log_info "Creating collection: $collection"
-        
-        curl -X PUT "http://localhost:6333/collections/$collection" \
-            -H "Content-Type: application/json" \
-            -H "api-key: face_access_2025" \
-            -d '{
-                "vectors": {
-                    "size": 512,
-                    "distance": "Cosine"
-                },
-                "optimizers_config": {
-                    "default_segment_number": 2
-                },
-                "replication_factor": 1
-            }' &> /dev/null || log_info "Collection $collection may already exist."
-    done
-    
-    log_success "Qdrant collections initialized."
-}
 
 # Start Node-RED
 start_nodered() {
@@ -247,27 +191,27 @@ start_nodered() {
 show_deployment_info() {
     log_info "Simplified System Deployment Information:"
     echo
-    echo "🏗️  System Architecture:"
+    echo "🏗️  System Architecture (New):"
     echo "  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐"
     echo "  │ Grove Vision AI │───→│   MQTT Broker   │───→│    Node-RED     │"
     echo "  │      V2         │    │   (Main Server) │    │   (Main Server) │"
-    echo "  │   (Multiple)    │    │                 │    │  ┌─────────────┐ │"
-    echo "  └─────────────────┘    └─────────────────┘    │  │ Configuration │ │"
-    echo "                                              │  │ is managed in │ │"
-    echo "                                              │  │ Node-RED      │ │"
-    echo "                                              └─────────────────┘"
-    echo "                                                         │"
-    echo "                                                         ▼ HTTP API"
-    echo "  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐"
-    echo "  │  FaceEmbed API  │◀───│     Qdrant      │◀───│  Vector Search  │"
-    echo "  │ ✅ Verified     │    │   (Main Server) │    │                 │"
-    echo "  │  192.168.10.179 │    │                 │    │                 │"
-    echo "  │  3-18ms Inference│   │                 │    │                 │"
+    echo "  │   (Multiple)    │    │                 │    │                 │"
     echo "  └─────────────────┘    └─────────────────┘    └─────────────────┘"
+    echo "           ▲                                             │"
+    echo "           │                                             │"
+    echo "           │ MQTT                                        │ HTTP API"
+    echo "           │                                             │"
+    echo "           └────────────────────┬──────────────────────────┘"
+    echo "                                │"
+    echo "                                ▼"
+    echo "                      ┌─────────────────┐"
+    echo "                      │  FaceEmbed API  │"
+    echo "                      │ (with SQLite DB)│"
+    echo "                      │ 192.168.10.179  │"
+    echo "                      └─────────────────┘"
     echo
     
     echo "🌐 Service URLs:"
-    echo "  • Qdrant (Vector DB):    http://localhost:6333/dashboard"
     echo "  • MQTT Broker:           mqtt://localhost:1883"
     
     if docker ps | grep -q face_access_nodered; then
@@ -296,18 +240,12 @@ show_service_status() {
 show_manual_instructions() {
     echo "📝 Manual Startup (Recommended for Debugging):"
     echo
-    echo "1. Start Qdrant:"
-    echo "   docker run -d --name face_access_qdrant -p 6333:6333 \\"
-    echo "     -v \$(pwd)/services/qdrant/storage:/qdrant/storage \\"
-    echo "     -e QDRANT__SERVICE__API_KEY=face_access_2025 \\"
-    echo "     qdrant/qdrant:v1.9.0"
-    echo
-    echo "2. Start MQTT:"
+    echo "1. Start MQTT:"
     echo "   docker run -d --name face_access_mqtt -p 1883:1883 \\"
     echo "     -v \$(pwd)/services/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf \\"
     echo "     eclipse-mosquitto:2.0"
     echo
-    echo "3. Start Node-RED:"
+    echo "2. Start Node-RED:"
     echo "   docker run -d --name face_access_nodered -p 1880:1880 \\"
     echo "     -v \$(pwd)/services/node_red:/data -e TZ=Asia/Shanghai \\"
     echo "     nodered/node-red:3.1"
@@ -334,8 +272,8 @@ show_configuration_info() {
     echo
     echo "Access http://localhost:1880 and modify the following nodes:"
     echo
-    echo "• Modify Hailo device IP (in 'API URL Configuration' node):"
-    echo "  const faceEmbedHost = '192.168.10.179';"
+    echo "• Modify Hailo device IP (in 'Global Config' node):"
+    echo "  flow.set('hailo_host', '192.168.10.179');"
     echo
     echo "• Map devices to collections (in 'Prepare Vector Search' node):"
     echo "  const deviceCollectionMap = {"
@@ -343,12 +281,8 @@ show_configuration_info() {
     echo "    'grove_vision_ai_v2_002': 'warehouse_door'"
     echo "  };"
     echo
-    echo "• Adjust similarity threshold:"
+    echo "• Adjust similarity threshold (in 'Prepare Vector Search' node):"
     echo "  const threshold = 0.32;"
-    echo
-    echo "• Configure Qdrant:"
-    echo "  const qdrantHost = 'localhost';"
-    echo "  const qdrantPort = '6333';"
     echo
 }
 
@@ -382,8 +316,8 @@ main() {
                 echo "  --help, -h         Show this help message."
                 echo
                 echo "About this simplified system:"
-                echo "  • Includes only Qdrant, MQTT, and Node-RED core services."
-                echo "  • All configuration is managed in Node-RED, no .env files needed."
+                echo "  • Includes only MQTT and Node-RED core services."
+                echo "  • All configuration is managed in Node-RED and the FaceEmbed API, no .env files needed."
                 echo "  • The FaceEmbed API runs on a separate Hailo device (192.168.10.179)."
                 echo "  • For debugging, using --manual is recommended."
                 echo
@@ -408,7 +342,6 @@ main() {
     check_prerequisites
     create_directories
     start_infrastructure
-    init_qdrant_collections
     
     if [ "$WITH_NODERED" = true ]; then
         start_nodered
