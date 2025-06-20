@@ -1,6 +1,6 @@
 [
     {
-        "id": "f54138caa1c8a1ae",
+        "id": "37ffcca736e21929",
         "type": "subflow",
         "name": "Grove Vision AI V2 - Expert",
         "info": "",
@@ -11,7 +11,7 @@
                 "y": 360,
                 "wires": [
                     {
-                        "id": "7c1022aaa1def947"
+                        "id": "4bd3f431c4a6162d"
                     }
                 ]
             }
@@ -22,7 +22,7 @@
                 "y": 740,
                 "wires": [
                     {
-                        "id": "e27b61c642230636",
+                        "id": "f8cfe304c3aa177c",
                         "port": 0
                     }
                 ]
@@ -32,7 +32,7 @@
                 "y": 840,
                 "wires": [
                     {
-                        "id": "7de5e61c8b98f05a",
+                        "id": "5e344884e589b162",
                         "port": 0
                     }
                 ]
@@ -42,7 +42,7 @@
                 "y": 1000,
                 "wires": [
                     {
-                        "id": "e5805b647a121dcc",
+                        "id": "81ad91c14c9953bb",
                         "port": 0
                     }
                 ]
@@ -52,11 +52,11 @@
                 "y": 1240,
                 "wires": [
                     {
-                        "id": "50f7be4c6b69ddcc",
+                        "id": "eef614368040c38b",
                         "port": 0
                     },
                     {
-                        "id": "2119f860c6c1eb12",
+                        "id": "2b5f3fe713a2aaaf",
                         "port": 0
                     }
                 ]
@@ -153,17 +153,17 @@
             "y": 1060,
             "wires": [
                 {
-                    "id": "638e3329feab7f3b",
+                    "id": "99b0a4c0151cd547",
                     "port": 0
                 }
             ]
         }
     },
     {
-        "id": "34ff1840310f347b",
+        "id": "e069af12c73c8d9e",
         "type": "change",
-        "z": "f54138caa1c8a1ae",
-        "g": "69cc677d5eeb6285",
+        "z": "37ffcca736e21929",
+        "g": "8ab15f33ef595ac2",
         "name": "subscribe Action Builder",
         "rules": [
             {
@@ -198,20 +198,20 @@
         "y": 320,
         "wires": [
             [
-                "81acb1decc5c4b42"
+                "98ef8de63ad42c59"
             ]
         ]
     },
     {
-        "id": "83c2e443f9356992",
+        "id": "51e32ff92bc7c1af",
         "type": "mqtt in",
-        "z": "f54138caa1c8a1ae",
-        "g": "cc6c35456a15da28",
+        "z": "37ffcca736e21929",
+        "g": "3ca0aeacf7eede56",
         "name": "when receive data",
         "topic": "",
         "qos": "2",
         "datatype": "auto-detect",
-        "broker": "34867ff4d0f1a72d",
+        "broker": "${mqtt-broker}",
         "nl": false,
         "rap": true,
         "rh": 0,
@@ -220,15 +220,15 @@
         "y": 800,
         "wires": [
             [
-                "7f40b6ba3ad0fd72"
+                "94aead4c0a054eb6"
             ]
         ]
     },
     {
-        "id": "e5805b647a121dcc",
+        "id": "81ad91c14c9953bb",
         "type": "switch",
-        "z": "f54138caa1c8a1ae",
-        "g": "cc6c35456a15da28",
+        "z": "37ffcca736e21929",
+        "g": "3ca0aeacf7eede56",
         "name": "Check msg is valid",
         "property": "payload",
         "propertyType": "msg",
@@ -244,16 +244,16 @@
         "y": 800,
         "wires": [
             [
-                "43ac01de39db9fa4",
-                "7de5e61c8b98f05a"
+                "2a6acf2ffe6d48f0",
+                "5e344884e589b162"
             ]
         ]
     },
     {
-        "id": "32e42483ac76b0e4",
+        "id": "3d31e5eba0fe5fb5",
         "type": "change",
-        "z": "f54138caa1c8a1ae",
-        "g": "305158fcab074826",
+        "z": "37ffcca736e21929",
+        "g": "89fc86e76458f9fb",
         "name": "send a stop command to camera",
         "rules": [
             {
@@ -281,16 +281,16 @@
         "y": 560,
         "wires": [
             [
-                "bf72268f8a9d27a0"
+                "a7f679eeebb72b06"
             ]
         ]
     },
     {
-        "id": "7b60f4ba019f1749",
+        "id": "fc3116a3ea81d6b4",
         "type": "inject",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "d": true,
-        "g": "409871c0949177f8",
+        "g": "e9e37ef82bf24b06",
         "name": "auto resend command",
         "props": [
             {
@@ -308,15 +308,15 @@
         "y": 120,
         "wires": [
             [
-                "e48cf7986bc612ae"
+                "83706267020e5fdc"
             ]
         ]
     },
     {
-        "id": "23a2040bdd246943",
+        "id": "29c000d9cfa74b08",
         "type": "change",
-        "z": "f54138caa1c8a1ae",
-        "g": "409871c0949177f8",
+        "z": "37ffcca736e21929",
+        "g": "e9e37ef82bf24b06",
         "name": "send a start command to camera",
         "rules": [
             {
@@ -343,15 +343,15 @@
         "y": 120,
         "wires": [
             [
-                "80ea757c32b9913b"
+                "fe26e55c2984ec81"
             ]
         ]
     },
     {
-        "id": "e48cf7986bc612ae",
+        "id": "83706267020e5fdc",
         "type": "switch",
-        "z": "f54138caa1c8a1ae",
-        "g": "409871c0949177f8",
+        "z": "37ffcca736e21929",
+        "g": "e9e37ef82bf24b06",
         "name": "Confirm that the camera is currently expected to be connected",
         "property": "mqtt_rx",
         "propertyType": "flow",
@@ -367,15 +367,15 @@
         "y": 120,
         "wires": [
             [
-                "23a2040bdd246943"
+                "29c000d9cfa74b08"
             ]
         ]
     },
     {
-        "id": "6748f017d2dabecb",
+        "id": "5bb93bee31162c99",
         "type": "comment",
-        "z": "f54138caa1c8a1ae",
-        "g": "409871c0949177f8",
+        "z": "37ffcca736e21929",
+        "g": "e9e37ef82bf24b06",
         "name": "reconnect logic",
         "info": "",
         "x": 380,
@@ -383,10 +383,10 @@
         "wires": []
     },
     {
-        "id": "43ac01de39db9fa4",
+        "id": "2a6acf2ffe6d48f0",
         "type": "change",
-        "z": "f54138caa1c8a1ae",
-        "g": "cc6c35456a15da28",
+        "z": "37ffcca736e21929",
+        "g": "3ca0aeacf7eede56",
         "name": "get image",
         "rules": [
             {
@@ -413,15 +413,15 @@
         "y": 740,
         "wires": [
             [
-                "e27b61c642230636"
+                "f8cfe304c3aa177c"
             ]
         ]
     },
     {
-        "id": "7de5e61c8b98f05a",
+        "id": "5e344884e589b162",
         "type": "change",
-        "z": "f54138caa1c8a1ae",
-        "g": "cc6c35456a15da28",
+        "z": "37ffcca736e21929",
+        "g": "3ca0aeacf7eede56",
         "name": "get inference result",
         "rules": [
             {
@@ -449,16 +449,16 @@
         "y": 800,
         "wires": [
             [
-                "4834b4fbeb890aaf"
+                "fb8d530b46383422"
             ]
         ],
         "info": "[[118,150,237,175,100,0],[114,119,76,84,100,2]]"
     },
     {
-        "id": "e27b61c642230636",
+        "id": "f8cfe304c3aa177c",
         "type": "switch",
-        "z": "f54138caa1c8a1ae",
-        "g": "cc6c35456a15da28",
+        "z": "37ffcca736e21929",
+        "g": "3ca0aeacf7eede56",
         "name": "Check image is valid",
         "property": "payload.length",
         "propertyType": "msg",
@@ -479,10 +479,10 @@
         ]
     },
     {
-        "id": "208a200fb554527a",
+        "id": "cda4f5e35bc82020",
         "type": "change",
-        "z": "f54138caa1c8a1ae",
-        "g": "69cc677d5eeb6285",
+        "z": "37ffcca736e21929",
+        "g": "8ab15f33ef595ac2",
         "name": "override mqtt_tx and mqtt_rx",
         "rules": [
             {
@@ -509,16 +509,16 @@
         "y": 360,
         "wires": [
             [
-                "34ff1840310f347b",
-                "2191648825898ba5"
+                "e069af12c73c8d9e",
+                "35a036b9b86e5e3d"
             ]
         ]
     },
     {
-        "id": "2191648825898ba5",
+        "id": "35a036b9b86e5e3d",
         "type": "change",
-        "z": "f54138caa1c8a1ae",
-        "g": "69cc677d5eeb6285",
+        "z": "37ffcca736e21929",
+        "g": "8ab15f33ef595ac2",
         "name": "send a start command to camera",
         "rules": [
             {
@@ -546,15 +546,15 @@
         "y": 400,
         "wires": [
             [
-                "a44331a86a7dc340"
+                "db83a2b123aea8bf"
             ]
         ]
     },
     {
-        "id": "c87d0fd5fafe4f59",
+        "id": "3d79a5a615588605",
         "type": "change",
-        "z": "f54138caa1c8a1ae",
-        "g": "305158fcab074826",
+        "z": "37ffcca736e21929",
+        "g": "89fc86e76458f9fb",
         "name": "Unsubscribe Action Builder",
         "rules": [
             {
@@ -581,15 +581,15 @@
         "y": 640,
         "wires": [
             [
-                "32ad13252fa2a166"
+                "365e276e442c6cd0"
             ]
         ]
     },
     {
-        "id": "195442578d4a91b3",
+        "id": "64c9af7a453dac6c",
         "type": "comment",
-        "z": "f54138caa1c8a1ae",
-        "g": "305158fcab074826",
+        "z": "37ffcca736e21929",
+        "g": "89fc86e76458f9fb",
         "name": "Handle stop",
         "info": "",
         "x": 530,
@@ -597,10 +597,10 @@
         "wires": []
     },
     {
-        "id": "d2e1fd0a7353c49b",
+        "id": "8bf92feaacd75596",
         "type": "comment",
-        "z": "f54138caa1c8a1ae",
-        "g": "a971c4f96839364e",
+        "z": "37ffcca736e21929",
+        "g": "72a3d27bfb2ffa2c",
         "name": "Handle start",
         "info": "",
         "x": 370,
@@ -608,10 +608,10 @@
         "wires": []
     },
     {
-        "id": "300b5a664aa446f0",
+        "id": "020be5c35974f535",
         "type": "comment",
-        "z": "f54138caa1c8a1ae",
-        "g": "cc6c35456a15da28",
+        "z": "37ffcca736e21929",
+        "g": "3ca0aeacf7eede56",
         "name": "Received data",
         "info": "",
         "x": 370,
@@ -619,14 +619,14 @@
         "wires": []
     },
     {
-        "id": "81acb1decc5c4b42",
+        "id": "98ef8de63ad42c59",
         "type": "link out",
-        "z": "f54138caa1c8a1ae",
-        "g": "69cc677d5eeb6285",
+        "z": "37ffcca736e21929",
+        "g": "8ab15f33ef595ac2",
         "name": "sub/unsub",
         "mode": "link",
         "links": [
-            "827d086314b3653a"
+            "64a4c026a54c41ac"
         ],
         "x": 1250,
         "y": 320,
@@ -634,33 +634,33 @@
         "l": true
     },
     {
-        "id": "827d086314b3653a",
+        "id": "64a4c026a54c41ac",
         "type": "link in",
-        "z": "f54138caa1c8a1ae",
-        "g": "cc6c35456a15da28",
+        "z": "37ffcca736e21929",
+        "g": "3ca0aeacf7eede56",
         "name": "sub/unsub",
         "links": [
-            "81acb1decc5c4b42",
-            "32ad13252fa2a166"
+            "98ef8de63ad42c59",
+            "365e276e442c6cd0"
         ],
         "x": 400,
         "y": 800,
         "wires": [
             [
-                "83c2e443f9356992"
+                "51e32ff92bc7c1af"
             ]
         ],
         "l": true
     },
     {
-        "id": "32ad13252fa2a166",
+        "id": "365e276e442c6cd0",
         "type": "link out",
-        "z": "f54138caa1c8a1ae",
-        "g": "305158fcab074826",
+        "z": "37ffcca736e21929",
+        "g": "89fc86e76458f9fb",
         "name": "sub/unsub",
         "mode": "link",
         "links": [
-            "827d086314b3653a"
+            "64a4c026a54c41ac"
         ],
         "x": 870,
         "y": 640,
@@ -668,10 +668,10 @@
         "l": true
     },
     {
-        "id": "6ad80085190e5ec4",
+        "id": "6f1cac63a6840356",
         "type": "mqtt out",
-        "z": "f54138caa1c8a1ae",
-        "g": "8c88939dfc248608",
+        "z": "37ffcca736e21929",
+        "g": "a05e6fbc67b5614c",
         "name": "mqtt out",
         "topic": "",
         "qos": "0",
@@ -681,20 +681,20 @@
         "userProps": "",
         "correl": "",
         "expiry": "",
-        "broker": "34867ff4d0f1a72d",
+        "broker": "${mqtt-broker}",
         "x": 1200,
         "y": 580,
         "wires": []
     },
     {
-        "id": "bf72268f8a9d27a0",
+        "id": "a7f679eeebb72b06",
         "type": "link out",
-        "z": "f54138caa1c8a1ae",
-        "g": "305158fcab074826",
+        "z": "37ffcca736e21929",
+        "g": "89fc86e76458f9fb",
         "name": "pub",
         "mode": "link",
         "links": [
-            "a3ff982e6c0d205d"
+            "fd9ae1f79a84697e"
         ],
         "x": 850,
         "y": 560,
@@ -702,34 +702,34 @@
         "l": true
     },
     {
-        "id": "a3ff982e6c0d205d",
+        "id": "fd9ae1f79a84697e",
         "type": "link in",
-        "z": "f54138caa1c8a1ae",
-        "g": "8c88939dfc248608",
+        "z": "37ffcca736e21929",
+        "g": "a05e6fbc67b5614c",
         "name": "pub",
         "links": [
-            "80ea757c32b9913b",
-            "a44331a86a7dc340",
-            "bf72268f8a9d27a0"
+            "fe26e55c2984ec81",
+            "db83a2b123aea8bf",
+            "a7f679eeebb72b06"
         ],
         "x": 1070,
         "y": 580,
         "wires": [
             [
-                "6ad80085190e5ec4"
+                "6f1cac63a6840356"
             ]
         ],
         "l": true
     },
     {
-        "id": "80ea757c32b9913b",
+        "id": "fe26e55c2984ec81",
         "type": "link out",
-        "z": "f54138caa1c8a1ae",
-        "g": "409871c0949177f8",
+        "z": "37ffcca736e21929",
+        "g": "e9e37ef82bf24b06",
         "name": "pub",
         "mode": "link",
         "links": [
-            "a3ff982e6c0d205d"
+            "fd9ae1f79a84697e"
         ],
         "x": 1510,
         "y": 120,
@@ -737,14 +737,14 @@
         "l": true
     },
     {
-        "id": "a44331a86a7dc340",
+        "id": "db83a2b123aea8bf",
         "type": "link out",
-        "z": "f54138caa1c8a1ae",
-        "g": "69cc677d5eeb6285",
+        "z": "37ffcca736e21929",
+        "g": "8ab15f33ef595ac2",
         "name": "pub",
         "mode": "link",
         "links": [
-            "a3ff982e6c0d205d"
+            "fd9ae1f79a84697e"
         ],
         "x": 1250,
         "y": 400,
@@ -752,10 +752,10 @@
         "l": true
     },
     {
-        "id": "006879ed95d2920d",
+        "id": "c3c3f2391a25ee6a",
         "type": "comment",
-        "z": "f54138caa1c8a1ae",
-        "g": "8c88939dfc248608",
+        "z": "37ffcca736e21929",
+        "g": "a05e6fbc67b5614c",
         "name": "Basic mqtt publish",
         "info": "",
         "x": 1090,
@@ -763,9 +763,9 @@
         "wires": []
     },
     {
-        "id": "638e3329feab7f3b",
+        "id": "99b0a4c0151cd547",
         "type": "status",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "name": "",
         "scope": null,
         "x": 1450,
@@ -775,9 +775,9 @@
         ]
     },
     {
-        "id": "fa36ac27d76f6c9f",
+        "id": "2f4d0b0c237b5e4f",
         "type": "comment",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "name": "image buffer",
         "info": "",
         "x": 1670,
@@ -785,9 +785,9 @@
         "wires": []
     },
     {
-        "id": "24209c5fc89d3273",
+        "id": "74cb9f0ad04e2b18",
         "type": "comment",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "name": "inference result",
         "info": "",
         "x": 1680,
@@ -795,9 +795,9 @@
         "wires": []
     },
     {
-        "id": "7c1022aaa1def947",
+        "id": "4bd3f431c4a6162d",
         "type": "switch",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "name": "start or stop",
         "property": "payload",
         "propertyType": "msg",
@@ -820,19 +820,19 @@
         "y": 360,
         "wires": [
             [
-                "cfdacde8f6653612",
-                "8732ffe74f7d75d7"
+                "b0ad8c4d8d055b0d",
+                "139ad738ea66eedf"
             ],
             [
-                "32e42483ac76b0e4",
-                "964fdf92823e0d1c"
+                "3d31e5eba0fe5fb5",
+                "d7b8b984bdfb290d"
             ]
         ]
     },
     {
-        "id": "a6e005eefcf3eefb",
+        "id": "4ab96061875364d9",
         "type": "comment",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "name": "original data",
         "info": "",
         "x": 1670,
@@ -840,9 +840,9 @@
         "wires": []
     },
     {
-        "id": "4834b4fbeb890aaf",
+        "id": "fb8d530b46383422",
         "type": "function",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "name": "Check if the target is detected",
         "func": "if (Array.isArray(msg.payload)) {\n    var length = msg.payload.length;\n    if (length > 1) {\n        msg.payload = 1;\n    } else if (length === 0) {\n        msg.payload = 0;\n    } else {\n        msg.payload = 1;\n    }\n} else {\n    msg.payload = 0;\n}\nreturn msg;",
         "outputs": 1,
@@ -855,14 +855,14 @@
         "y": 1240,
         "wires": [
             [
-                "5b36c809f82364a8"
+                "44cf40dadd83eda6"
             ]
         ]
     },
     {
-        "id": "5b36c809f82364a8",
+        "id": "44cf40dadd83eda6",
         "type": "switch",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "name": "yes or no",
         "property": "payload",
         "propertyType": "msg",
@@ -885,17 +885,17 @@
         "y": 1240,
         "wires": [
             [
-                "50f7be4c6b69ddcc"
+                "eef614368040c38b"
             ],
             [
-                "2119f860c6c1eb12"
+                "2b5f3fe713a2aaaf"
             ]
         ]
     },
     {
-        "id": "50f7be4c6b69ddcc",
+        "id": "eef614368040c38b",
         "type": "switch",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "name": "",
         "property": "triggerMode",
         "propertyType": "env",
@@ -916,9 +916,9 @@
         ]
     },
     {
-        "id": "2119f860c6c1eb12",
+        "id": "2b5f3fe713a2aaaf",
         "type": "switch",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "name": "",
         "property": "triggerMode",
         "propertyType": "env",
@@ -939,9 +939,9 @@
         ]
     },
     {
-        "id": "cfdacde8f6653612",
+        "id": "b0ad8c4d8d055b0d",
         "type": "debug",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "name": "debug 1",
         "active": true,
         "tosidebar": true,
@@ -956,10 +956,10 @@
         "wires": []
     },
     {
-        "id": "7f40b6ba3ad0fd72",
+        "id": "94aead4c0a054eb6",
         "type": "change",
-        "z": "f54138caa1c8a1ae",
-        "g": "cc6c35456a15da28",
+        "z": "37ffcca736e21929",
+        "g": "3ca0aeacf7eede56",
         "name": "Add camera_id",
         "rules": [
             {
@@ -980,15 +980,15 @@
         "y": 760,
         "wires": [
             [
-                "e5805b647a121dcc"
+                "81ad91c14c9953bb"
             ]
         ]
     },
     {
-        "id": "8732ffe74f7d75d7",
+        "id": "139ad738ea66eedf",
         "type": "change",
-        "z": "f54138caa1c8a1ae",
-        "g": "a971c4f96839364e",
+        "z": "37ffcca736e21929",
+        "g": "72a3d27bfb2ffa2c",
         "name": "set flow.camera_id",
         "rules": [
             {
@@ -1017,15 +1017,15 @@
         "y": 300,
         "wires": [
             [
-                "208a200fb554527a"
+                "cda4f5e35bc82020"
             ]
         ]
     },
     {
-        "id": "964fdf92823e0d1c",
+        "id": "d7b8b984bdfb290d",
         "type": "delay",
-        "z": "f54138caa1c8a1ae",
-        "g": "305158fcab074826",
+        "z": "37ffcca736e21929",
+        "g": "89fc86e76458f9fb",
         "name": "delay 0.2s",
         "pauseType": "delay",
         "timeout": "0.2",
@@ -1043,14 +1043,14 @@
         "y": 640,
         "wires": [
             [
-                "c87d0fd5fafe4f59"
+                "3d79a5a615588605"
             ]
         ]
     },
     {
-        "id": "8c88939dfc248608",
+        "id": "a05e6fbc67b5614c",
         "type": "group",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "style": {
             "stroke": "#999999",
             "stroke-opacity": "1",
@@ -1061,9 +1061,9 @@
             "color": "#a4a4a4"
         },
         "nodes": [
-            "6ad80085190e5ec4",
-            "a3ff982e6c0d205d",
-            "006879ed95d2920d"
+            "6f1cac63a6840356",
+            "fd9ae1f79a84697e",
+            "c3c3f2391a25ee6a"
         ],
         "x": 974,
         "y": 479,
@@ -1071,9 +1071,9 @@
         "h": 142
     },
     {
-        "id": "cc6c35456a15da28",
+        "id": "3ca0aeacf7eede56",
         "type": "group",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "style": {
             "stroke": "#999999",
             "stroke-opacity": "1",
@@ -1084,14 +1084,14 @@
             "color": "#a4a4a4"
         },
         "nodes": [
-            "83c2e443f9356992",
-            "e5805b647a121dcc",
-            "43ac01de39db9fa4",
-            "7de5e61c8b98f05a",
-            "e27b61c642230636",
-            "300b5a664aa446f0",
-            "827d086314b3653a",
-            "7f40b6ba3ad0fd72"
+            "51e32ff92bc7c1af",
+            "81ad91c14c9953bb",
+            "2a6acf2ffe6d48f0",
+            "5e344884e589b162",
+            "f8cfe304c3aa177c",
+            "020be5c35974f535",
+            "64a4c026a54c41ac",
+            "94aead4c0a054eb6"
         ],
         "x": 274,
         "y": 699,
@@ -1099,9 +1099,9 @@
         "h": 142
     },
     {
-        "id": "a971c4f96839364e",
+        "id": "72a3d27bfb2ffa2c",
         "type": "group",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "style": {
             "stroke": "#999999",
             "stroke-opacity": "1",
@@ -1112,9 +1112,9 @@
             "color": "#a4a4a4"
         },
         "nodes": [
-            "d2e1fd0a7353c49b",
-            "8732ffe74f7d75d7",
-            "69cc677d5eeb6285"
+            "8bf92feaacd75596",
+            "139ad738ea66eedf",
+            "8ab15f33ef595ac2"
         ],
         "x": 274,
         "y": 179,
@@ -1122,9 +1122,9 @@
         "h": 288
     },
     {
-        "id": "305158fcab074826",
+        "id": "89fc86e76458f9fb",
         "type": "group",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "style": {
             "stroke": "#999999",
             "stroke-opacity": "1",
@@ -1135,12 +1135,12 @@
             "color": "#a4a4a4"
         },
         "nodes": [
-            "32e42483ac76b0e4",
-            "c87d0fd5fafe4f59",
-            "195442578d4a91b3",
-            "32ad13252fa2a166",
-            "bf72268f8a9d27a0",
-            "964fdf92823e0d1c"
+            "3d31e5eba0fe5fb5",
+            "3d79a5a615588605",
+            "64c9af7a453dac6c",
+            "365e276e442c6cd0",
+            "a7f679eeebb72b06",
+            "d7b8b984bdfb290d"
         ],
         "x": 354,
         "y": 479,
@@ -1148,9 +1148,9 @@
         "h": 202
     },
     {
-        "id": "409871c0949177f8",
+        "id": "e9e37ef82bf24b06",
         "type": "group",
-        "z": "f54138caa1c8a1ae",
+        "z": "37ffcca736e21929",
         "style": {
             "stroke": "#999999",
             "stroke-opacity": "1",
@@ -1161,11 +1161,11 @@
             "color": "#a4a4a4"
         },
         "nodes": [
-            "7b60f4ba019f1749",
-            "23a2040bdd246943",
-            "e48cf7986bc612ae",
-            "6748f017d2dabecb",
-            "80ea757c32b9913b"
+            "fc3116a3ea81d6b4",
+            "29c000d9cfa74b08",
+            "83706267020e5fdc",
+            "5bb93bee31162c99",
+            "fe26e55c2984ec81"
         ],
         "x": 274,
         "y": 19,
@@ -1173,10 +1173,10 @@
         "h": 142
     },
     {
-        "id": "69cc677d5eeb6285",
+        "id": "8ab15f33ef595ac2",
         "type": "group",
-        "z": "f54138caa1c8a1ae",
-        "g": "a971c4f96839364e",
+        "z": "37ffcca736e21929",
+        "g": "72a3d27bfb2ffa2c",
         "style": {
             "stroke": "#999999",
             "stroke-opacity": "1",
@@ -1187,11 +1187,11 @@
             "color": "#a4a4a4"
         },
         "nodes": [
-            "34ff1840310f347b",
-            "208a200fb554527a",
-            "2191648825898ba5",
-            "81acb1decc5c4b42",
-            "a44331a86a7dc340"
+            "e069af12c73c8d9e",
+            "cda4f5e35bc82020",
+            "35a036b9b86e5e3d",
+            "98ef8de63ad42c59",
+            "db83a2b123aea8bf"
         ],
         "x": 554,
         "y": 279,
@@ -1199,47 +1199,16 @@
         "h": 162
     },
     {
-        "id": "34867ff4d0f1a72d",
-        "type": "mqtt-broker",
-        "name": "",
-        "broker": "mqtt://localhost",
-        "port": 1883,
-        "clientid": "",
-        "autoConnect": true,
-        "usetls": false,
-        "protocolVersion": 4,
-        "keepalive": 60,
-        "cleansession": true,
-        "autoUnsubscribe": true,
-        "birthTopic": "",
-        "birthQos": "0",
-        "birthRetain": "false",
-        "birthPayload": "",
-        "birthMsg": {},
-        "closeTopic": "",
-        "closeQos": "0",
-        "closeRetain": "false",
-        "closePayload": "",
-        "closeMsg": {},
-        "willTopic": "",
-        "willQos": "0",
-        "willRetain": "false",
-        "willPayload": "",
-        "willMsg": {},
-        "userProps": "",
-        "sessionExpiry": ""
-    },
-    {
-        "id": "face_access_main_flow",
+        "id": "51eef9e4cf47bddb",
         "type": "tab",
         "label": "Face Recognition Access Control",
         "disabled": false,
         "info": "Main flow for the face recognition access control system based on Grove Vision AI V2 and Hailo-8 - Simplified configuration version"
     },
     {
-        "id": "global_config_trigger",
+        "id": "5dcf1fac2abd6cb0",
         "type": "inject",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Global Config (Load on Start)",
         "props": [
             {
@@ -1261,14 +1230,14 @@
         "y": 20,
         "wires": [
             [
-                "global_config_node"
+                "aaec4c13620a5656"
             ]
         ]
     },
     {
-        "id": "global_config_node",
+        "id": "aaec4c13620a5656",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Global Config",
         "func": "// --- Global Config ---\n// Set all external service addresses and parameters here\n// This node will run automatically once on startup\n\n// Hailo AI Chip (Face Vector API) Configuration\nflow.set('hailo_host', '192.168.10.179');\nflow.set('hailo_port', '8000');\n\n// Grove Vision AI Camera Configuration\nflow.set('image_width', 640);\nflow.set('image_height', 480);\n\n// Grove Vision AI Resolution Configuration (AT+RSL=<width>,<height>)\n// For supported resolutions, please refer to the device documentation, e.g., '240,240' or '480,480'\n// Reference: https://github.com/Seeed-Studio/SSCMA-Micro/blob/main/docs/protocol/at-protocol-en_US.md\nflow.set('resolution', '640,480');\n\nnode.log(\"Global configuration loaded.\");\n\nreturn msg;",
         "outputs": 1,
@@ -1284,9 +1253,9 @@
         ]
     },
     {
-        "id": "api_url_configurator",
+        "id": "c2fdc45bf0688804",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "API URL Configuration for Detect & Embed",
         "func": "// Read environment variables or use default values\nconst faceEmbedHost = flow.get('hailo_host') || '192.168.10.179';\nconst faceEmbedPort = flow.get('hailo_port') || '8000';\n\n// Set the API URL to the new all-in-one endpoint\nmsg.url = `http://${faceEmbedHost}:${faceEmbedPort}/detect_and_embed`;\nmsg.timeout = 5000; // Set a 5-second timeout\n\n// Prepare the request body, containing only the image\nmsg.payload = {\n    image_base64: msg.payload.img_b64\n};\n\nreturn msg;",
         "outputs": 1,
@@ -1299,14 +1268,14 @@
         "y": 280,
         "wires": [
             [
-                "face_embed_request"
+                "1e983f076090b912"
             ]
         ]
     },
     {
-        "id": "face_embed_request",
+        "id": "1e983f076090b912",
         "type": "http request",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "FaceEmbed API (remote)",
         "method": "POST",
         "ret": "obj",
@@ -1336,14 +1305,14 @@
         "y": 280,
         "wires": [
             [
-                "vision_frame_processor"
+                "698a1f6b2c7cf65e"
             ]
         ]
     },
     {
-        "id": "vector_search_request",
+        "id": "e1c709907a67cdec",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Prepare Vector Search",
         "func": "// Get face vector\nconst embedding = msg.payload.vector;\nconst confidence = msg.payload.confidence;\nconst processingTime = msg.payload.processing_time_ms;\n\n// Check vector quality\nif (confidence < 0.5) {\n    node.warn(`Low face quality: ${confidence}`);\n    return null;\n}\n\n// Device to Collection mapping - add new devices here\nconst deviceCollectionMap = {\n    'grove_vision_ai_v2_eb9e4d18': 'office_entrance',\n    'grove_vision_ai_v2_002': 'warehouse_door',\n    'grove_vision_ai_v2_003': 'lab_access',\n    'default': 'default_faces'\n};\n\n// Get device configuration\nconst deviceId = msg.deviceId;\nconst collectionName = deviceCollectionMap[deviceId] || deviceCollectionMap['default'];\nconst threshold = 0.32;  // Similarity threshold, adjustable here\n\n// Prepare FaceEmbed API search request\nmsg.collectionName = collectionName;\nmsg.threshold = threshold;\nmsg.embedding = embedding;\nmsg.confidence = confidence;\nmsg.processingTime = processingTime;\n\n// Get Hailo API configuration from flow context\nconst hailoHost = flow.get('hailo_host') || '192.168.10.179';\nconst hailoPort = flow.get('hailo_port') || '8000';\nmsg.url = `http://${hailoHost}:${hailoPort}/vectors/search`;\n\nmsg.payload = {\n    collection: collectionName,\n    vector: embedding,\n    threshold: threshold,\n    top_k: 1\n};\n\n// Set HTTP headers\nmsg.headers = { 'Content-Type': 'application/json' };\n\nreturn msg;",
         "outputs": 1,
@@ -1356,14 +1325,14 @@
         "y": 280,
         "wires": [
             [
-                "qdrant_search"
+                "fc4b68d838fa3038"
             ]
         ]
     },
     {
-        "id": "qdrant_search",
+        "id": "fc4b68d838fa3038",
         "type": "http request",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Qdrant Search",
         "method": "POST",
         "ret": "obj",
@@ -1380,14 +1349,14 @@
         "y": 280,
         "wires": [
             [
-                "access_decision"
+                "c89b3dde019e7de3"
             ]
         ]
     },
     {
-        "id": "access_decision",
+        "id": "c89b3dde019e7de3",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Access Decision",
         "func": "const searchResponse = msg.payload;\nconst deviceId = msg.deviceId;\nconst threshold = msg.threshold;\nconst timestamp = new Date().toISOString();\n\nlet decision = false;\nlet name = null;\nlet similarity = 0.0;\nlet matchedId = null;\n\n// Check search results from our new API\nif (searchResponse && searchResponse.status === 'found' && searchResponse.results.length > 0) {\n    const bestMatch = searchResponse.results[0];\n    similarity = bestMatch.similarity;\n    \n    // The API already filters by threshold, but we can double-check if needed.\n    // The check is implicit now: if we have a result, it's a match.\n    decision = true;\n    name = bestMatch.user_id; // The user_id is the name\n    matchedId = bestMatch.id;\n    \n}\n\n// Construct result message\nconst result = {\n    ts: timestamp,\n    device_id: deviceId,\n    decision: decision,\n    name: name,\n    similarity: parseFloat(similarity.toFixed(4)),\n    confidence: msg.confidence,\n    processing_time_ms: msg.processingTime,\n    matched_id: matchedId\n};\n\n// Prepare MQTT publish\nmsg.topic = `access/result/${deviceId}`;\nmsg.payload = result;\n\n// Save to context for logging\ncontext.set('lastAccess', result);\n\nreturn msg;",
         "outputs": 1,
@@ -1400,16 +1369,16 @@
         "y": 280,
         "wires": [
             [
-                "access_result_publisher",
-                "access_logger",
-                "0221797157934c01"
+                "68e992f4291aed68",
+                "69dbff253e90570e",
+                "d8d2af25dd2f0d9f"
             ]
         ]
     },
     {
-        "id": "access_result_publisher",
+        "id": "68e992f4291aed68",
         "type": "mqtt out",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Publish Access Result",
         "topic": "",
         "qos": "1",
@@ -1419,15 +1388,15 @@
         "userProps": "",
         "correl": "",
         "expiry": "",
-        "broker": "mqtt_broker",
+        "broker": "e35a9ef6f8fa6441",
         "x": 1770,
         "y": 260,
         "wires": []
     },
     {
-        "id": "access_logger",
+        "id": "69dbff253e90570e",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Access Log",
         "func": "const result = msg.payload;\n\n// Record access log\nnode.log(`Access Decision - Device: ${result.device_id}, Decision: ${result.decision}, Name: ${result.name || 'Unknown'}, Distance: ${result.distance}`);\n\n// More detailed logging logic can be added here\n// e.g., write to file, database, etc.\n\nreturn msg;",
         "outputs": 1,
@@ -1442,9 +1411,9 @@
         ]
     },
     {
-        "id": "manual_enroll_trigger",
+        "id": "a53cc48395f1f54c",
         "type": "inject",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Face Enroll",
         "props": [
             {
@@ -1466,14 +1435,14 @@
         "y": 440,
         "wires": [
             [
-                "enroll_processor"
+                "d7d90953b9567035"
             ]
         ]
     },
     {
-        "id": "enroll_processor",
+        "id": "d7d90953b9567035",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Process Enroll Request",
         "func": "const payload = msg.payload;\nconst topic = msg.topic;\nconst deviceId = topic.split('/')[2];\n\n\n// Validate enroll request\nif (!payload.name || !payload.action || !payload.collection) {\n    node.error('Invalid enroll request: missing name, action, or collection');\n    return null;\n}\n\nif (payload.action === 'start') {\n    // Start enrollment process\n    msg.deviceId = deviceId;\n    msg.enrollName = payload.name;\n    msg.payload = {\n        action: 'start_collection',\n        name: payload.name,\n        device_id: deviceId\n    };\n    \n    // Set enrollment status\n    flow.set(`enroll_${deviceId}`, {\n        name: payload.name,\n        collection: payload.collection, // Store target collection\n        status: 'collecting',\n        vectors: [], // Initialize vector array\n        startTime: Date.now()\n    });\n    \n    return msg;\n}\n\nreturn null;",
         "outputs": 1,
@@ -1486,14 +1455,14 @@
         "y": 440,
         "wires": [
             [
-                "enroll_frame_collector"
+                "bd9e853bef600661"
             ]
         ]
     },
     {
-        "id": "enroll_frame_collector",
+        "id": "bd9e853bef600661",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Collect Enroll Frames",
         "func": "// This node listens for subsequent vision frames to collect face data\n// In practice, it needs to coordinate with vision_frame_processor\n\nconst deviceId = msg.deviceId;\nconst enrollState = context.get(`enroll_${deviceId}`);\n\nif (!enrollState || enrollState.status !== 'collecting') {\n    return null;\n}\n\n// Send command to start collection\nmsg.topic = `access/enroll_status/${deviceId}`;\nmsg.payload = {\n    status: 'collecting',\n    message: `Starting to collect face data for ${enrollState.name}, please face the camera`,\n    frames_needed: 10\n};\n\nreturn msg;",
         "outputs": 1,
@@ -1505,14 +1474,14 @@
         "y": 440,
         "wires": [
             [
-                "enroll_status_publisher"
+                "719170bc4c11ca51"
             ]
         ]
     },
     {
-        "id": "enroll_status_publisher",
+        "id": "719170bc4c11ca51",
         "type": "mqtt out",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Publish Enroll",
         "topic": "",
         "qos": "1",
@@ -1522,15 +1491,15 @@
         "userProps": "",
         "correl": "",
         "expiry": "",
-        "broker": "mqtt_broker",
+        "broker": "e35a9ef6f8fa6441",
         "x": 740,
         "y": 440,
         "wires": []
     },
     {
-        "id": "95fddc256a11e927",
+        "id": "b1cb1658a74e5e85",
         "type": "change",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "send start",
         "rules": [
             {
@@ -1551,14 +1520,14 @@
         "y": 80,
         "wires": [
             [
-                "786320639347a67f"
+                "f52e94d3edf8fdeb"
             ]
         ]
     },
     {
-        "id": "950c446d7e951013",
+        "id": "b63376c0880674fa",
         "type": "inject",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Start",
         "props": [
             {
@@ -1580,47 +1549,42 @@
         "y": 80,
         "wires": [
             [
-                "95fddc256a11e927"
+                "b1cb1658a74e5e85"
             ]
         ]
     },
     {
-        "id": "786320639347a67f",
-        "type": "subflow:f54138caa1c8a1ae",
-        "z": "face_access_main_flow",
+        "id": "f52e94d3edf8fdeb",
+        "type": "subflow:37ffcca736e21929",
+        "z": "51eef9e4cf47bddb",
         "name": "Grove Vision AI V2",
         "env": [
             {
                 "name": "mqtt-broker",
                 "value": "34867ff4d0f1a72d",
                 "type": "conf-type"
-            },
-            {
-                "name": "triggerMode",
-                "value": "yes",
-                "type": "str"
             }
         ],
         "x": 480,
         "y": 120,
         "wires": [
             [
-                "grove_data_combiner",
-                "ef88f812ba82787c"
+                "4ea447dfe3cfdeaf",
+                "b782454fcb8bc263"
             ],
             [
-                "grove_data_combiner"
+                "4ea447dfe3cfdeaf"
             ],
             [],
             [
-                "detection_trigger_handler"
+                "a29f729e52d4dacf"
             ]
         ]
     },
     {
-        "id": "grove_data_combiner",
+        "id": "4ea447dfe3cfdeaf",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Grove Data Combiner",
         "func": "// Combine Grove Vision AI V2's output 1 (image) and output 2 (detection result)\n// Assemble directly into standard vision frame format\n\nconst camera_id = msg.camera_id || 'grove_vision_ai_v2_eb9e4d18';\n\n// Determine data source: output 1 is image data (buffer), output 2 is detection result (array)\nif (Buffer.isBuffer(msg.payload) || typeof msg.payload === 'string') {\n    // Output 1: Raw image data\n    context.set(`image_${camera_id}`, {\n        img_b64: msg.payload,\n        timestamp: Date.now()\n    });\n    \n    // Image data is not output directly, waits for detection result\n    return null;\n    \n} else if (Array.isArray(msg.payload)) {\n    // Output 2: Detection result - combine image and bounding boxes\n    const bboxes = msg.payload;\n    \n    // Get corresponding image data\n    const imageContext = context.get(`image_${camera_id}`);\n    if (!imageContext) {\n        node.warn('No image data found for camera: ' + camera_id);\n        return null;\n    }\n    \n    // Check if image data is expired (older than 3 seconds)\n    if (Date.now() - imageContext.timestamp > 3000) {\n        node.warn('Image data too old for camera: ' + camera_id);\n        context.set(`image_${camera_id}`, null);\n        return null;\n    }\n    \n    // Convert Grove Vision AI V2's bbox format to standard format\n    // Grove format: [x_center, y_center, width, height, confidence, class]\n    const convertedBboxes = [];\n    if (Array.isArray(bboxes)) {\n        for (const bbox of bboxes) {\n            if (bbox.length < 5) continue;\n            \n            const x_center = bbox[0];\n            const y_center = bbox[1];\n            const width = bbox[2];\n            const height = bbox[3];\n            const confidence = bbox[4];\n            \n            // Convert from center coordinates to top-left coordinates\n            const x_topleft = x_center - width / 2;\n            const y_topleft = y_center - height / 2;\n            \n            // --- Bounding box correction logic (fixed floating point error issue) ---\n            const maxImageWidth = flow.get('image_width') || 480;\n            const maxImageHeight = flow.get('image_height') || 480;\n\n            // 1. Calculate the original four floating-point boundaries\n            const left = x_topleft;\n            const top = y_topleft;\n            const right = x_topleft + width;\n            const bottom = y_topleft + height;\n\n            // 2. Clamp the boundaries to the image dimensions, then round to integers for safety\n            const final_left = Math.round(Math.max(0, left));\n            const final_top = Math.round(Math.max(0, top));\n            const final_right = Math.round(Math.min(maxImageWidth, right));\n            const final_bottom = Math.round(Math.min(maxImageHeight, bottom));\n\n            // 3. Calculate the final integer x, y, w, h from the corrected integer boundaries\n            const final_x = final_left;\n            const final_y = final_top;\n            const final_w = final_right - final_left;\n            const final_h = final_bottom - final_top;\n\n            // 4. Re-check for valid size (skip if width or height is <= 0 after clipping)\n            if (final_w <= 0 || final_h <= 0) {\n                node.warn(`Bbox has zero size after clipping, skipping. Original: [${bbox.join(', ')}]`);\n                continue;\n            }\n            \n            const score = confidence / 100.0; // Convert to 0-1 range\n            \n            convertedBboxes.push({\n                x: final_x,\n                y: final_y,\n                w: final_w,\n                h: final_h,\n                score: score\n            });\n        }\n    }\n    \n    const standardPayload = {\n        ts: new Date().toISOString(),\n        img_b64: imageContext.img_b64,\n        bboxes: convertedBboxes\n    };\n    \n    msg.deviceId = camera_id;\n    msg.topic = `vision/frames/${camera_id}`;\n    msg.payload = standardPayload;\n    \n    context.set(`image_${camera_id}`, null);\n    \n    return msg;\n    \n} else {\n    return null;\n}",
         "outputs": 1,
@@ -1633,14 +1597,14 @@
         "y": 120,
         "wires": [
             [
-                "vision_frame_rate_limiter"
+                "b0d741c5f44343fd"
             ]
         ]
     },
     {
-        "id": "vision_frame_rate_limiter",
+        "id": "b0d741c5f44343fd",
         "type": "delay",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Speed Limit (1fps)",
         "pauseType": "rate",
         "timeout": "5",
@@ -1658,14 +1622,14 @@
         "y": 120,
         "wires": [
             [
-                "detection_filter"
+                "6e10fc15e45664f1"
             ]
         ]
     },
     {
-        "id": "detection_filter",
+        "id": "6e10fc15e45664f1",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Has Detected?",
         "func": "// Check if `msg.payload.bboxes` array exists and is not empty\nif (msg.payload && Array.isArray(msg.payload.bboxes) && msg.payload.bboxes.length > 0) {\n    // If there is a detection result, pass the message to the next node\n    return msg; \n} else {\n    // If no target is detected, abort the flow and do not return any message\n    node.warn(\"No target detected, API call aborted.\");\n    return null; \n}",
         "outputs": 1,
@@ -1678,14 +1642,14 @@
         "y": 120,
         "wires": [
             [
-                "api_url_configurator"
+                "c2fdc45bf0688804"
             ]
         ]
     },
     {
-        "id": "detection_trigger_handler",
+        "id": "a29f729e52d4dacf",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Detection Trigger Handler",
         "func": "// Handle detection trigger signal from Grove Vision AI V2\n// Can be used for statistics, logging, etc.\n\nconst camera_id = msg.camera_id || 'unknown';\nconst detected = msg.payload;\n\nif (detected) {\n    node.log(`Face detected by camera: ${camera_id}`);\n    \n    // Update detection statistics\n    const stats = context.get('detection_stats') || {};\n    const today = new Date().toDateString();\n    \n    if (!stats[today]) {\n        stats[today] = {};\n    }\n    if (!stats[today][camera_id]) {\n        stats[today][camera_id] = 0;\n    }\n    \n    stats[today][camera_id]++;\n    context.set('detection_stats', stats);\n}\n\nreturn null;  // Do not propagate the message",
         "outputs": 1,
@@ -1700,9 +1664,9 @@
         ]
     },
     {
-        "id": "vision_frame_processor",
+        "id": "698a1f6b2c7cf65e",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Process Vision Frame",
         "func": "const results = msg.payload;\n\n// Check if the API returned a valid array of faces\nif (!Array.isArray(results) || results.length === 0) {\n    // If no face is detected, terminate the flow\n    return null; \n}\n\nlet largestFace = null;\nlet maxArea = 0;\n\nfor (const face of results) {\n    const bbox = face.bbox;\n    \n    // Fix: Check if bbox is an object containing x,y,w,h\n    if (bbox && typeof bbox.x === 'number' && typeof bbox.y === 'number' && typeof bbox.w === 'number' && typeof bbox.h === 'number') {\n        const area = bbox.w * bbox.h;\n        if (area > maxArea) {\n            maxArea = area;\n            largestFace = face;\n        }\n    } else {\n        node.warn(`Received incorrect bbox format: ${JSON.stringify(bbox)}`);\n    }\n}\n\nif (!largestFace) {\n    node.warn(\"No valid bounding box in detected face data.\");\n    return null;\n}\n\n// Fix: Correctly extract nested data from API response\nconst newMsg = {\n    ...msg,\n    payload: {\n        embedding: largestFace.embedding.vector,\n        bbox: largestFace.bbox,\n        landmarks: largestFace.landmarks,\n        // Prepare data for the next node\n        vector: largestFace.embedding.vector,\n        confidence: largestFace.embedding.confidence,\n        processing_time_ms: largestFace.embedding.processing_time_ms,\n        detection_confidence: largestFace.detection_confidence\n    },\n    originalImage: msg.originalImage || msg.payload.image_base64\n};\n\n// Determine if it's a recognition or enrollment flow based on context\nconst deviceId = msg.deviceId;\nconst enrollState = flow.get('enroll_' + deviceId);\n\nif (enrollState && enrollState.status === 'collecting') {\n    return [null, newMsg];\n} else {\n    return [newMsg, null];\n}\n",
         "outputs": 2,
@@ -1715,17 +1679,17 @@
         "y": 280,
         "wires": [
             [
-                "vector_search_request"
+                "e1c709907a67cdec"
             ],
             [
-                "collect_and_save_enroll_vector"
+                "cc08a83b08253e7d"
             ]
         ]
     },
     {
-        "id": "collect_and_save_enroll_vector",
+        "id": "cc08a83b08253e7d",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Collect/Average/Store Vector",
         "func": "const deviceId = msg.deviceId;\nconst enrollState = flow.get('enroll_' + deviceId);\n\nif (!enrollState || enrollState.status !== 'collecting') {\n    node.warn('Not in collecting state, ignoring vector.');\n    return null;\n}\n\n// 1. Collect vectors\nconst vector = msg.payload.vector;\nif (vector) {\n    enrollState.vectors.push(vector);\n}\nflow.set('enroll_' + deviceId, enrollState);\n\nconst collectedCount = enrollState.vectors.length;\nconst neededCount = 10;\n\n// 2. Send progress update\nconst statusUpdate = {\n    topic: `access/enroll_status/${deviceId}`,\n    payload: {\n        status: 'collecting',\n        message: `Collecting face data... (${collectedCount}/${neededCount})`,\n        collected: collectedCount,\n        needed: neededCount\n    }\n};\n\n// If not fully collected, just send progress and stop\nif (collectedCount < neededCount) {\n    return [statusUpdate, null];\n}\n\n// --- If collection is complete, start processing --- \nnode.log(`Collected ${neededCount} vectors for ${enrollState.name}. Averaging and preparing...`);\nenrollState.status = 'saving';\nflow.set('enroll_' + deviceId, enrollState);\n\n// 3. Calculate average vector\nconst vectors = enrollState.vectors;\nconst vectorDim = vectors[0].length;\nconst avgVector = new Array(vectorDim).fill(0);\n\nfor (const v of vectors) {\n    for (let i = 0; i < vectorDim; i++) {\n        avgVector[i] += v[i];\n    }\n}\nfor (let i = 0; i < vectorDim; i++) {\n    avgVector[i] /= vectors.length;\n}\n\n// 4. Prepare request for our new /vectors/add endpoint\nconst hailoHost = flow.get('hailo_host') || '192.168.10.179';\nconst hailoPort = flow.get('hailo_port') || '8000';\nconst collectionName = enrollState.collection;\n\nif (!collectionName) {\n    node.error(`Enrollment for ${enrollState.name} failed: Collection name not found in context.`);\n    const errorMsg = {\n        topic: `access/enroll_status/${deviceId}`,\n        payload: { status: 'error', message: 'Enrollment failed: Target database (collection) not specified.' }\n    };\n    flow.set('enroll_' + deviceId, null); // Clean up state\n    return [errorMsg, null]; // Send error and stop\n}\n\n// Prepare the message for the HTTP request node\nconst addVectorMsg = { ...msg }; // Inherit properties\naddVectorMsg.url = `http://${hailoHost}:${hailoPort}/vectors/add`;\naddVectorMsg.method = 'POST';\naddVectorMsg.headers = { 'Content-Type': 'application/json' };\naddVectorMsg.payload = {\n    collection: collectionName,\n    user_id: enrollState.name,\n    vector: avgVector\n};\n\nconst finalStatusUpdate = {\n    topic: `access/enroll_status/${deviceId}`,\n    payload: {\n        status: 'saving',\n        message: 'Data collection complete, saving to database...'\n    }\n};\n\n// Output 1: MQTT status update\n// Output 2: HTTP request to add vector\nreturn [finalStatusUpdate, addVectorMsg];",
         "outputs": 2,
@@ -1738,17 +1702,17 @@
         "y": 340,
         "wires": [
             [
-                "enroll_status_publisher"
+                "719170bc4c11ca51"
             ],
             [
-                "qdrant_upsert"
+                "a89a644a76fdb094"
             ]
         ]
     },
     {
-        "id": "qdrant_upsert",
+        "id": "a89a644a76fdb094",
         "type": "http request",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Add Vector to DB",
         "method": "use",
         "ret": "obj",
@@ -1765,14 +1729,14 @@
         "y": 400,
         "wires": [
             [
-                "enroll_final_status"
+                "b06b78d2a18a482c"
             ]
         ]
     },
     {
-        "id": "enroll_final_status",
+        "id": "b06b78d2a18a482c",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Enrollment Final Status",
         "func": "const deviceId = msg.deviceId;\nconst enrollState = flow.get('enroll_' + deviceId);\nlet finalMessage;\n\n// Check the response from our /vectors/add endpoint\nif (msg.statusCode === 200 && msg.payload.status === 'success') {\n    finalMessage = {\n        status: 'success',\n        message: `User ${enrollState.name} enrolled successfully!`\n    };\n    node.log(`Enrollment success for ${enrollState.name}.`);\n} else {\n    const errorDetail = msg.payload.detail || JSON.stringify(msg.payload);\n    finalMessage = {\n        status: 'error',\n        message: `User ${enrollState.name} enrollment failed: ${errorDetail}`\n    };\n    node.error(`Enrollment failed: ${errorDetail}`);\n}\n\n// Clean up context\nflow.set('enroll_' + deviceId, null);\n\nmsg.topic = `access/enroll_status/${deviceId}`;\nmsg.payload = finalMessage;\n\nreturn msg;",
         "outputs": 1,
@@ -1785,14 +1749,14 @@
         "y": 400,
         "wires": [
             [
-                "enroll_status_publisher"
+                "719170bc4c11ca51"
             ]
         ]
     },
     {
-        "id": "0221797157934c01",
+        "id": "d8d2af25dd2f0d9f",
         "type": "debug",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "debug 2",
         "active": true,
         "tosidebar": true,
@@ -1806,9 +1770,9 @@
         "wires": []
     },
     {
-        "id": "set_resolution_trigger",
+        "id": "22056a8de1ff63e9",
         "type": "inject",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Set Camera Resolution",
         "props": [
             {
@@ -1830,14 +1794,14 @@
         "y": 220,
         "wires": [
             [
-                "build_resolution_command"
+                "21e021ffae8261f1"
             ]
         ]
     },
     {
-        "id": "build_resolution_command",
+        "id": "21e021ffae8261f1",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Build AT Command",
         "func": "// Get the resolution string from global config, e.g., '240,240' or '480,480'\nconst resolution = flow.get('resolution') || '240,240';\n// Get device ID from trigger message\nconst deviceId = msg.topic || 'grove_vision_ai_v2_eb9e4d18';\n\n// --- Resolution to OPT_ID Mapping ---\n// !!Important!!: This mapping is inferred from common practice, you need to confirm the correct OPT_ID from the full device documentation\n// AT+SENSOR=<SENSOR_ID,ENABLE/DISABLE,OPT_ID>\\r\\n\n// Reference: https://github.com/Seeed-Studio/SSCMA-Micro/blob/main/docs/protocol/at-protocol-en_US.md\nconst resolutionMap = {\n    '240,240': 0, // Assuming OPT_ID 0 is 240x240\n    '480,480': 1,  // Assuming OPT_ID 1 is 480x480 (needs verification)\n    '640,480': 2\n};\n\nconst opt_id = resolutionMap[resolution];\nif (typeof opt_id === 'undefined') {\n    node.error(`Unsupported resolution config: ${resolution}`);\n    return null;\n}\n\n// Construct MQTT topic for sending AT command\nconst commandTopic = `sscma/v0/${deviceId}/rx`;\n\n// Construct AT command to set sensor (sensor_id=1, enable=1)\nconst atCommand = `AT+SENSOR=1,1,${opt_id}\\r\\n`;\n\nnode.log(`Preparing to send command to ${commandTopic}: ${atCommand}`);\n\nmsg.topic = commandTopic;\n// Convert the string command to the Buffer format required by the device\nmsg.payload = Buffer.from(atCommand);\n\nreturn msg;",
         "outputs": 1,
@@ -1850,14 +1814,14 @@
         "y": 220,
         "wires": [
             [
-                "resolution_mqtt_out"
+                "6db9efa08682378e"
             ]
         ]
     },
     {
-        "id": "resolution_mqtt_out",
+        "id": "6db9efa08682378e",
         "type": "mqtt out",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Send Command",
         "topic": "",
         "qos": "1",
@@ -1867,15 +1831,15 @@
         "userProps": "",
         "correl": "",
         "expiry": "",
-        "broker": "mqtt_broker",
+        "broker": "e35a9ef6f8fa6441",
         "x": 580,
         "y": 220,
         "wires": []
     },
     {
-        "id": "delete_person_trigger",
+        "id": "8798f5c51b806cef",
         "type": "inject",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Delete Face",
         "props": [
             {
@@ -1897,14 +1861,14 @@
         "y": 500,
         "wires": [
             [
-                "build_qdrant_delete_request"
+                "5ffaeb9e901aaefa"
             ]
         ]
     },
     {
-        "id": "build_qdrant_delete_request",
+        "id": "5ffaeb9e901aaefa",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Build Delete Request",
         "func": "// Get collection and name from input\nconst collection = msg.payload.collection;\nconst nameToDelete = msg.payload.name;\n\nif (!collection || !nameToDelete) {\n    node.error(\"Delete failed: 'collection' and 'name' must be provided in the input\", msg);\n    return null;\n}\n\n// Get Hailo API configuration from flow context\nconst hailoHost = flow.get('hailo_host') || '192.168.10.179';\nconst hailoPort = flow.get('hailo_port') || '8000';\n\n// Set API endpoint for our new delete endpoint\nmsg.url = `http://${hailoHost}:${hailoPort}/vectors/delete`;\n\n// This is a POST request\nmsg.method = 'POST';\n\n// Build the payload\nmsg.payload = {\n    collection: collection,\n    user_id: nameToDelete\n};\n\n// Set HTTP headers\nmsg.headers = { 'Content-Type': 'application/json' };\n\nnode.log(`Preparing to delete data for user '${nameToDelete}' from collection '${collection}'`);\n\nreturn msg;",
         "outputs": 1,
@@ -1917,14 +1881,14 @@
         "y": 500,
         "wires": [
             [
-                "send_qdrant_delete"
+                "53159724315a41ac"
             ]
         ]
     },
     {
-        "id": "send_qdrant_delete",
+        "id": "53159724315a41ac",
         "type": "http request",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Send Delete Request",
         "method": "use",
         "ret": "obj",
@@ -1941,14 +1905,14 @@
         "y": 500,
         "wires": [
             [
-                "delete_result_debug"
+                "4e8f933c3c61ab76"
             ]
         ]
     },
     {
-        "id": "delete_result_debug",
+        "id": "4e8f933c3c61ab76",
         "type": "debug",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Delete Result",
         "active": true,
         "tosidebar": true,
@@ -1963,9 +1927,9 @@
         "wires": []
     },
     {
-        "id": "ef88f812ba82787c",
+        "id": "b782454fcb8bc263",
         "type": "function",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "Image Resolution Check",
         "func": "function getJpegSize(buffer) {\n    let i = 2; // Skip the JPEG header (0xFFD8)\n    while (i < buffer.length) {\n        if (buffer[i] !== 0xFF) {\n            break;\n        }\n\n        const marker = buffer[i + 1];\n        const length = buffer.readUInt16BE(i + 2);\n\n        // Start Of Frame markers (not all SOF markers, but common ones)\n        if (marker === 0xC0 || marker === 0xC2) {\n            const height = buffer.readUInt16BE(i + 5);\n            const width = buffer.readUInt16BE(i + 7);\n            return { width, height };\n        }\n\n        i += 2 + length;\n    }\n    return null;\n}\n\n// Step 1: Parse base64 to Buffer\nconst base64 = msg.payload.replace(/^data:image\\/\\w+;base64,/, '');\nconst buffer = Buffer.from(base64, 'base64');\n\n// Step 2: Get dimensions\nconst size = getJpegSize(buffer);\nif (size) {\n    msg.payload = size;\n} else {\n    msg.payload = { error: \"Could not parse JPEG dimensions\" };\n}\nreturn msg;",
         "outputs": 1,
@@ -1978,14 +1942,14 @@
         "y": 40,
         "wires": [
             [
-                "5ab02b1b4c2ba758"
+                "b20c4af5ab390274"
             ]
         ]
     },
     {
-        "id": "5ab02b1b4c2ba758",
+        "id": "b20c4af5ab390274",
         "type": "debug",
-        "z": "face_access_main_flow",
+        "z": "51eef9e4cf47bddb",
         "name": "debug 3",
         "active": false,
         "tosidebar": true,
@@ -1999,7 +1963,7 @@
         "wires": []
     },
     {
-        "id": "mqtt_broker",
+        "id": "e35a9ef6f8fa6441",
         "type": "mqtt-broker",
         "name": "Face Access MQTT Broker",
         "broker": "localhost",
