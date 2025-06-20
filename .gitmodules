@@ -1,0 +1,3 @@
+[submodule "services/face_embed_api"]
+	path = services/face_embed_api
+	url = https://github.com/Seeed-Solution/face-recognition-api
